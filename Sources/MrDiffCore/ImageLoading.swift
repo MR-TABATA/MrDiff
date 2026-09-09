@@ -25,9 +25,9 @@ public enum ImageLoadError: Error, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .cannotOpen(let u):   return "cannot open \(u.path)"
-        case .notAnImage(let u):   return "not an image: \(u.path)"
-        case .cannotDecode(let u): return "cannot decode \(u.path)"
+        case .cannotOpen(let u):   return t("error.cannot_open", u.path)
+        case .notAnImage(let u):   return t("error.not_an_image", u.path)
+        case .cannotDecode(let u): return t("error.cannot_decode", u.path)
         }
     }
 }

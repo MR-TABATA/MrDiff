@@ -58,6 +58,24 @@ final class PixelDiffTests: XCTestCase {
         XCTAssertEqual(d.first, Point(x: 0, y: 0))
     }
 
+    /// **現状**: 大きい画像では、1 画素の違いが `0.0%` と表示される。
+    /// 「同じ」と読めてしまう。**割合ではなく数や領域で言うべき**、という宿題。
+    ///
+    /// 小さい画像では起きない（40x30 なら 1/1200 = 0.083% → `0.1`）ので、
+    /// ファイルではなく比率を直に置いて固定する。
+    func test_現状_大きい画像だと1画素の違いが0パーセントになる() {
+        let d = PixelDiff(changed: 1, total: 120_000, first: Point(x: 0, y: 0))
+        XCTAssertEqual(String(format: "%.1f", d.fraction * 100), "0.0",
+                       "400x300 で 1 画素違うと、表示上は 0.0% になる")
+        XCTAssertEqual(d.changed, 1, "実際には 1 画素違う")
+    }
+
+    /// 4K のスクリーンショットだと、さらに見えなくなる。
+    func test_現状_4Kだと1画素の違いはもっと消える() {
+        let d = PixelDiff(changed: 1, total: 3840 * 2160, first: Point(x: 0, y: 0))
+        XCTAssertEqual(String(format: "%.1f", d.fraction * 100), "0.0")
+    }
+
     func test_0画素なら_identical() {
         let r = comparePixels(a: [], sizeA: Size(width: 0, height: 0),
                               b: [], sizeB: Size(width: 0, height: 0), bytesPerPixel: 4)
