@@ -1,0 +1,11 @@
+# 気付き・参考文書。価格・戦略・未発表の計画を含むので git 管理外
+/notes/
+
+# Swift / SPM
+.build/
+.swiftpm/
+*.xcodeproj
+DerivedData/
+
+# macOS
+.DS_Store
