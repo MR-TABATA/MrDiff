@@ -1,5 +1,7 @@
 /* 下書き。**本人の確認前。** 訳したものではなく、機能を知っている側が書き直すこと。 */
 
+"text.identical"       = "違いはありません";
+"text.summary"         = "変更 %d 行・追加 %d 行・削除 %d 行";
 "images.identical"     = "違いはありません";
 "images.differ"        = "%d / %d 画素が違います（%@%%）";
 "images.differ.tiny"   = "%d / %d 画素が違います";
@@ -15,5 +17,8 @@
 "error.cannot_open"    = "開けません: %@";
 "error.not_an_image"   = "画像として読めません: %@";
 "error.cannot_decode"  = "読み込めません: %@";
-"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] <a> <b>";
+"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] <a> <b>";
 "error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";
+"error.bad_color"      = "--color には always / never / auto を指定してください";
+"error.mixed_kinds"    = "テキストとテキストでないものは比べられません";
+"error.image_only_flag" = "--tolerance と --ignore-alpha は画像用です。テキストには使えません";

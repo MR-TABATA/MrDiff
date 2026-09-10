@@ -1,8 +1,8 @@
 import Foundation
 import MrDiffCore
 
-// 最初のスライス。**画像 2 枚が違うかどうかと、どこが**を答える。
-// 絵は出さない（それは GUI の仕事）。README の1つ目の例に当たる。
+// **違うかどうかと、どこが**を答える。テキストなら色つきの行差分、
+// 画像なら「何画素・どこ」。絵は出さない（それは GUI の仕事）。
 //
 // **人が読む出力だけ t() を通す。** --json と終了コードは通さない ――
 // 訳すと grep を書いた人のスクリプトが日本語環境で壊れる。
@@ -27,10 +27,61 @@ if let raw = args.first(where: { $0.hasPrefix("--tolerance=") })?
     tolerance = n
 }
 
+// 色。**既定は「端末なら付ける」。**パイプへ流したときに制御文字が混じると、
+// grep にかけた人の手元で壊れる。NO_COLOR（no-color.org）も見る。
+let useColor: Bool = {
+    if let raw = args.first(where: { $0.hasPrefix("--color=") })?
+        .dropFirst("--color=".count) {
+        switch raw {
+        case "always": return true
+        case "never": return false
+        case "auto": break
+        default: die(t("error.bad_color"))
+        }
+    }
+    if ProcessInfo.processInfo.environment["NO_COLOR"] != nil { return false }
+    return isatty(FileHandle.standardOutput.fileDescriptor) == 1
+}()
+
 guard files.count == 2 else { die(t("error.usage")) }
 
 let a = URL(fileURLWithPath: files[0])
 let b = URL(fileURLWithPath: files[1])
+
+// **種類は中身で決める。**拡張子は見ない（.txt でない設定ファイルのほうが多い）。
+// テキストが 2 つなら行差分、そうでなければ画像として読む。
+let dataA: Data, dataB: Data
+do {
+    dataA = try readFile(a)
+    dataB = try readFile(b)
+} catch {
+    die("\(error)")
+}
+
+if detectKind(dataA) == .text && detectKind(dataB) == .text {
+    // **効かないつまみを黙って飲まない。**--tolerance と --ignore-alpha は画素の話で、
+    // 行には意味が無い。黙って無視すると「指定したのに効いていない」に気づけない。
+    if tolerance > 0 || ignoreAlpha { die(t("error.image_only_flag")) }
+
+    let d = compareText(String(decoding: dataA, as: UTF8.self),
+                        String(decoding: dataB, as: UTF8.self))
+    if wantsJSON {
+        if d.isIdentical {
+            print(#"{"result":"identical"}"#)
+        } else {
+            print("{\"result\":\"differ\",\"changed\":\(d.changed),\"added\":\(d.added),\"removed\":\(d.removed)}")
+        }
+    } else if d.isIdentical {
+        print(t("text.identical"))
+    } else {
+        print(t("text.summary", d.changed, d.added, d.removed))
+        for line in renderText(d, style: Style(on: useColor)) { print(line) }
+    }
+    exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+}
+
+// **片方だけテキストなら、比べない。**行と画素は突き合わせられない。
+if detectKind(dataA) != detectKind(dataB) { die(t("error.mixed_kinds")) }
 
 let result: ImageComparison
 do {

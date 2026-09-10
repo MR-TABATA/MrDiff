@@ -1,5 +1,7 @@
 /* 人が読む出力。機械向け（--format json）はここを通さない。 */
 
+"text.identical"       = "Files are identical";
+"text.summary"         = "%d changed, %d added, %d removed";
 "images.identical"     = "Images are identical";
 "images.differ"        = "Images differ — %d of %d pixels (%@%%)";
 "images.differ.tiny"   = "Images differ — %d of %d pixels";
@@ -15,5 +17,8 @@
 "error.cannot_open"    = "cannot open %@";
 "error.not_an_image"   = "not an image: %@";
 "error.cannot_decode"  = "cannot decode %@";
-"error.usage"          = "usage: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] <a> <b>";
+"error.usage"          = "usage: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] <a> <b>";
 "error.bad_tolerance"  = "--tolerance needs a number 0 or greater";
+"error.bad_color"      = "--color takes always, never or auto";
+"error.mixed_kinds"    = "cannot compare text with a non-text file";
+"error.image_only_flag" = "--tolerance and --ignore-alpha apply to images, not text";

@@ -22,9 +22,9 @@ $ mrdiff config.json config-new.json
 5 changed, 1 added, 0 removed
 ```
 
-> **Status: not built yet.** This README is the design. Nothing here runs today.
-> Numbers marked `TODO` are unmeasured — they will be filled in from real runs,
-> not estimates.
+> **Status: text and images work. Binary, URL and clipboard do not.**
+> This README is still partly design. Numbers marked `TODO` are unmeasured —
+> they will be filled in from real runs, not estimates.
 
 ## What it does
 
@@ -38,7 +38,7 @@ a binary, or a 10 GB log where you only care whether anything moved.
 
 | | |
 | :--- | :--- |
-| Text and source | line diff, colored |
+| **Text and source** | line diff, colored, with character-level highlight |
 | **Images** | do they differ, what fraction of pixels, where is the first one |
 | **Binaries** | do they differ, how many regions, offset of the first |
 | **Two URLs** | fetch both, diff the HTML source |
@@ -64,7 +64,32 @@ mrdiff --format json a.bin b.bin      # machine readable
 
 mrdiff --tolerance=2 a.png b.jpg      # ±2 per channel counts as the same
 mrdiff --ignore-alpha a.png b.png     # compare colour only
+mrdiff --color=never a.log b.log      # no escape codes (auto-off when piped)
 ```
+
+### Text
+
+```
+$ mrdiff a.log b.log
+2 changed, 1 added, 0 removed
+    1     1   09:00:01 INFO  starting worker pool size=8
+    2     2   09:00:02 INFO  connected to db host=primary
+    3       - 09:00:03 INFO  GET /health status=200 latency=42ms
+          3 + 09:00:03 INFO  GET /health status=200 latency=43ms
+    4       - 09:00:04 INFO  GET /users status=200 latency=18ms
+          4 + 09:00:04 INFO  GET /users status=500 latency=18ms
+    5     5   09:00:05 INFO  GET /orders status=200 latency=61ms
+```
+
+Changed lines get a **character-level highlight** — in the pair above only the
+`2`/`3` and the `2`/`5` are marked. Finding the one character that moved is the
+point; painting the whole line red is not enough.
+
+Line numbers are two columns, left and right. A deleted line 7 and an added line
+7 are not the same line, and one column cannot say which is which.
+
+Which kind of comparison runs is decided by **content, not extension**: two files
+that decode as UTF-8 and hold no NUL byte get the line diff.
 
 `--tolerance` and `--ignore-alpha` loosen what counts as different. When either
 is on, the output says so — "identical" on its own always means byte-identical.
