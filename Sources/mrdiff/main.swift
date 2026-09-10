@@ -10,11 +10,21 @@ import MrDiffCore
 let args = Array(CommandLine.arguments.dropFirst())
 let wantsJSON = args.contains("--format=json") || args.contains("--json")
 let wantsExitCode = args.contains("--exit-code")
+let ignoreAlpha = args.contains("--ignore-alpha")
 let files = args.filter { !$0.hasPrefix("-") }
 
 func die(_ message: String) -> Never {
     FileHandle.standardError.write(Data(("mrdiff: " + message + "\n").utf8))
     exit(2)
+}
+
+// **`--tolerance=N` の形だけ受ける。**空白区切り（`--tolerance 2`）を許すと、
+// 2 がファイル名の側に落ちて「使い方」が出る ―― 黙って 0 で走るよりはよい。
+var tolerance = 0
+if let raw = args.first(where: { $0.hasPrefix("--tolerance=") })?
+    .dropFirst("--tolerance=".count) {
+    guard let n = Int(raw), n >= 0 else { die(t("error.bad_tolerance")) }
+    tolerance = n
 }
 
 guard files.count == 2 else { die(t("error.usage")) }
@@ -24,15 +34,27 @@ let b = URL(fileURLWithPath: files[1])
 
 let result: ImageComparison
 do {
-    result = try compareImages(a, b)
+    result = try compareImages(a, b, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
 } catch {
     die("\(error)")
 }
 
+// **緩めて比べたなら、そう言う。**「同じ」とだけ言うと、何と比べた「同じ」なのかが
+// 消える。既定（緩めていない）のときは何も足さない。
+var relaxations: [String] = []
+if tolerance > 0 { relaxations.append(t("note.tolerance", tolerance)) }
+if ignoreAlpha { relaxations.append(t("note.ignore_alpha")) }
+let note = relaxations.isEmpty
+    ? nil
+    : t("note.compared_with", relaxations.joined(separator: t("note.separator")))
+
 switch result {
 case .identical:
     if wantsJSON { print(#"{"result":"identical"}"#) }
-    else { print(t("images.identical")) }
+    else {
+        print(t("images.identical"))
+        if let note { print("  " + note) }
+    }
     exit(0)
 
 case .sizeMismatch(let sa, let sb):
@@ -55,6 +77,7 @@ case .differ(let d):
             print(t("images.differ.tiny", d.changed, d.total))
         }
         print(t("images.first", d.first.x, d.first.y))
+        if let note { print("  " + note) }
     }
     exit(wantsExitCode ? 1 : 0)
 }

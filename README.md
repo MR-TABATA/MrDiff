@@ -61,7 +61,18 @@ mrdiff --clipboard notes.md           # clipboard vs file
 
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --format json a.bin b.bin      # machine readable
+
+mrdiff --tolerance=2 a.png b.jpg      # ±2 per channel counts as the same
+mrdiff --ignore-alpha a.png b.png     # compare colour only
 ```
+
+`--tolerance` and `--ignore-alpha` loosen what counts as different. When either
+is on, the output says so — "identical" on its own always means byte-identical.
+
+A lossy re-encode does not collapse to zero at a small tolerance: on the test
+pair the largest per-channel gap is 36, so `--tolerance=2` still leaves half the
+pixels different. Read it as a measure of how far the values have spread, not as
+a way to call two files the same.
 
 ### In CI
 

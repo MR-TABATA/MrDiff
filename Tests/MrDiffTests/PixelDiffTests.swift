@@ -97,6 +97,66 @@ final class PixelDiffTests: XCTestCase {
                        "0.06% は 0.1 として出す")
     }
 
+    // MARK: - つまみ
+
+    /// `--ignore-alpha` は**アルファだけの差**に効く。合成配列なら、実ファイルと違って
+    /// 「アルファだけ」を正確に作れる（実ファイルの fixture は RGB もずれていた）。
+    func test_透明度を見なければアルファだけの差は消える() {
+        let a = buf([[0, 0, 0, 255], black, black, black])
+        let b = buf([[0, 0, 0, 128], black, black, black])
+        XCTAssertEqual(comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2,
+                                     bytesPerPixel: 4, ignoreAlpha: true),
+                       .identical)
+    }
+
+    /// 色が違えば、透明度を見なくても差分。**落とすのはアルファだけ。**
+    func test_透明度を見なくても色の差は残る() {
+        let a = buf([[10, 0, 0, 255], black, black, black])
+        let b = buf([[20, 0, 0, 128], black, black, black])
+        guard case .differ(let d) = comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2,
+                                                  bytesPerPixel: 4, ignoreAlpha: true) else {
+            return XCTFail("differ が返るはず")
+        }
+        XCTAssertEqual(d.changed, 1)
+    }
+
+    /// RGBA でない形では ignoreAlpha は効かせない。**どれがアルファか決まらないため。**
+    func test_RGBAでなければ透明度の指定は効かない() {
+        let a: [UInt8] = [10, 0, 0, 20, 0, 0]      // 3 バイト/画素 が 2 つ
+        let b: [UInt8] = [10, 0, 0, 21, 0, 0]
+        let size = Size(width: 2, height: 1)
+        guard case .differ(let d) = comparePixels(a: a, sizeA: size, b: b, sizeB: size,
+                                                  bytesPerPixel: 3, ignoreAlpha: true) else {
+            return XCTFail("differ が返るはず")
+        }
+        XCTAssertEqual(d.changed, 1, "3 本目を黙って落としたりしない")
+    }
+
+    /// tolerance は**チャンネルごとの絶対差**で見る。境目の両側を固定する。
+    func test_toleranceの境目() {
+        let a = buf([[100, 100, 100, 255], black, black, black])
+        let b = buf([[102, 100, 100, 255], black, black, black])   // R だけ +2
+        XCTAssertEqual(comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2,
+                                     bytesPerPixel: 4, tolerance: 2),
+                       .identical, "±2 なら同じ")
+        guard case .differ(let d) = comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2,
+                                                  bytesPerPixel: 4, tolerance: 1) else {
+            return XCTFail("±1 では差分のまま")
+        }
+        XCTAssertEqual(d.changed, 1)
+    }
+
+    /// 既定は 0。**つまみを付けても、既定の答えは変えない。**
+    func test_既定は厳密なまま() {
+        let a = buf([[100, 100, 100, 255], black, black, black])
+        let b = buf([[101, 100, 100, 255], black, black, black])
+        guard case .differ(let d) = comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2,
+                                                  bytesPerPixel: 4) else {
+            return XCTFail("1 違えば差分")
+        }
+        XCTAssertEqual(d.changed, 1)
+    }
+
     func test_0画素なら_identical() {
         let r = comparePixels(a: [], sizeA: Size(width: 0, height: 0),
                               b: [], sizeB: Size(width: 0, height: 0), bytesPerPixel: 4)

@@ -17,8 +17,11 @@ final class ImageFileTests: XCTestCase {
         return try XCTUnwrap(u, "fixture が見つからない: \(name)")
     }
 
-    private func compare(_ a: String, _ b: String) throws -> ImageComparison {
-        try compareImages(try url(a), try url(b))
+    private func compare(_ a: String, _ b: String,
+                         tolerance: Int = 0,
+                         ignoreAlpha: Bool = false) throws -> ImageComparison {
+        try compareImages(try url(a), try url(b),
+                          tolerance: tolerance, ignoreAlpha: ignoreAlpha)
     }
 
     // MARK: - 読み込み
@@ -70,28 +73,57 @@ final class ImageFileTests: XCTestCase {
         XCTAssertEqual(d.first, Point(x: 8, y: 10), "消えたほうの帯の左上")
     }
 
-    // MARK: - いまの答えを固定したもの（正しい答えではない）
+    // MARK: - 微小な差を「同じ」とみなすつまみ
 
-    /// **現状**: 見た目は完全に同じなのに、全画素が「違う」になる。
-    /// アルファを 255→254 にしただけ。スクリーンショットを比べる人が欲しい答えではない。
-    /// 直すなら `--ignore-alpha` か、色だけ比べる既定にする。
-    func test_現状_アルファだけ違うと100パーセント() throws {
+    /// 既定は**厳密**。1 でも違えば違う。ここは変えていない。
+    func test_既定では微小な差も差分() throws {
         guard case .differ(let d) = try compare("alpha-a.png", "alpha-b.png") else {
             return XCTFail("differ が返るはず")
         }
         XCTAssertEqual(d.changed, d.total, "全画素が違う判定になる")
     }
 
-    /// **現状**: 同じ絵を JPEG にしただけで、大量の画素が「違う」になる。
-    /// JPEG は不可逆なので微小な差が全体に散る。目で見て同じものを「違う」と言っている。
-    /// 直すなら `--tolerance`（1 チャンネルあたり ±N までは同じとみなす）。
+    /// **測って分かったこと**: この fixture は「アルファだけ 255→254」ではなかった。
+    /// **RGB も 1 ずつずれている**（PNG の書き出しで前乗算の丸めが入ったと思われる）。
     ///
+    /// なので `--ignore-alpha` だけでは 0 にならない ―― 1200 → 960 に減るだけ。
+    /// 直すのは `--tolerance=1` のほう。**言い当てていたのは片方だけだった。**
+    func test_透明度を見なくても_この差は消えない() throws {
+        guard case .differ(let d) = try compare("alpha-a.png", "alpha-b.png",
+                                                ignoreAlpha: true) else {
+            return XCTFail("RGB もずれているので differ のまま")
+        }
+        XCTAssertEqual(d.changed, 960, "アルファを外しても RGB のずれが残る")
+    }
+
+    /// ±1 まで許せば、この 2 枚は同じ。
+    func test_tolerance1で一致する() throws {
+        XCTAssertEqual(try compare("alpha-a.png", "alpha-b.png", tolerance: 1), .identical)
+    }
+
+    /// JPEG は不可逆なので、微小な差が全体に散る。既定では 1 割以上が「違う」になる。
     /// **枚数は環境で変わりうるので、割合の下限だけを見る。**
-    func test_現状_JPEG再エンコードで大量に違う() throws {
+    func test_JPEG再エンコードは既定では大量に違う() throws {
         guard case .differ(let d) = try compare("reencode.png", "reencode.jpg") else {
             return XCTFail("differ が返るはず")
         }
         XCTAssertGreaterThan(d.fraction, 0.1, "1 割以上が違う判定になる（見た目は同じ）")
+    }
+
+    /// tolerance を上げれば減る。**ただし ±1 や ±2 では消えない。**
+    /// 測った最大差は R31 G9 B36 で、全部を飲み込むには ±36 が要る。
+    /// つまりこのつまみは JPEG を「同じ」にする道具ではなく、**どこまで散っているかを
+    /// 測る道具**。枚数は環境で動きうるので、単調に減ることだけを見る。
+    func test_toleranceを上げると減る() throws {
+        func changed(_ tol: Int) throws -> Int {
+            guard case .differ(let d) = try compare("reencode.png", "reencode.jpg",
+                                                    tolerance: tol) else { return 0 }
+            return d.changed
+        }
+        let zero = try changed(0), one = try changed(1), five = try changed(5)
+        XCTAssertGreaterThan(zero, one)
+        XCTAssertGreaterThan(one, five)
+        XCTAssertGreaterThan(five, 0, "±5 ではまだ残る")
     }
 
     /// なお「1 画素の違いが `0.0%` と出た」症状は、**この fixture では再現しなかった。**

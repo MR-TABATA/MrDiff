@@ -4,9 +4,16 @@
 "images.differ"        = "%d / %d 画素が違います（%@%%）";
 "images.differ.tiny"   = "%d / %d 画素が違います";
 "images.first"         = "最初の違いは (%d, %d)";
+
+/* 緩めて比べたときは、そう言う。「同じ」とだけ言うと嘘になる。 */
+"note.compared_with"   = "%@ で比較";
+"note.tolerance"       = "1 チャンネルあたり ±%d";
+"note.ignore_alpha"    = "透明度は見ない";
+"note.separator"       = "・";
 "images.size_mismatch" = "大きさが違います — %dx%d と %dx%d";
 
 "error.cannot_open"    = "開けません: %@";
 "error.not_an_image"   = "画像として読めません: %@";
 "error.cannot_decode"  = "読み込めません: %@";
-"error.usage"          = "使い方: mrdiff [--exit-code] [--json] <a> <b>";
+"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] <a> <b>";
+"error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";

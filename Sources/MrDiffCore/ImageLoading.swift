@@ -65,13 +65,19 @@ public func loadImage(at url: URL) throws -> DecodedImage {
 }
 
 /// ファイル 2 つを読んで比べる。
-public func compareImages(_ a: URL, _ b: URL) throws -> ImageComparison {
+public func compareImages(
+    _ a: URL, _ b: URL,
+    tolerance: Int = 0,
+    ignoreAlpha: Bool = false
+) throws -> ImageComparison {
     let ia = try loadImage(at: a)
     let ib = try loadImage(at: b)
     return comparePixels(
         a: ia.pixels, sizeA: ia.size,
         b: ib.pixels, sizeB: ib.size,
-        bytesPerPixel: ia.bytesPerPixel
+        bytesPerPixel: ia.bytesPerPixel,
+        tolerance: tolerance,
+        ignoreAlpha: ignoreAlpha
     )
 }
 #endif

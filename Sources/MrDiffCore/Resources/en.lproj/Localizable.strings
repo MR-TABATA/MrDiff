@@ -4,9 +4,16 @@
 "images.differ"        = "Images differ — %d of %d pixels (%@%%)";
 "images.differ.tiny"   = "Images differ — %d of %d pixels";
 "images.first"         = "First difference at (%d, %d)";
+
+/* 緩めて比べたときは、そう言う。「同じ」とだけ言うと嘘になる。 */
+"note.compared_with"   = "compared with %@";
+"note.tolerance"       = "±%d per channel";
+"note.ignore_alpha"    = "alpha ignored";
+"note.separator"       = ", ";
 "images.size_mismatch" = "Images differ in size — %dx%d vs %dx%d";
 
 "error.cannot_open"    = "cannot open %@";
 "error.not_an_image"   = "not an image: %@";
 "error.cannot_decode"  = "cannot decode %@";
-"error.usage"          = "usage: mrdiff [--exit-code] [--json] <a> <b>";
+"error.usage"          = "usage: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] <a> <b>";
+"error.bad_tolerance"  = "--tolerance needs a number 0 or greater";

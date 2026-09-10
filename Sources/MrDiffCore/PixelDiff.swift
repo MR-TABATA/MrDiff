@@ -73,10 +73,18 @@ public enum ImageComparison: Equatable, Sendable {
 ///
 /// 寸法が違えば `sizeMismatch` を返す。**足りない側に合わせて比べたりはしない**
 /// ―― 「はみ出した分は差分か」に答えが無く、どちらに決めても嘘になるため。
+///
+/// - Parameters:
+///   - tolerance: 1 チャンネルあたり **±この値までは同じとみなす**。既定 0（1 でも違えば違う）。
+///     JPEG の再エンコードのように、目で見て同じでも値が散る比較のためのつまみ。
+///   - ignoreAlpha: 透明度を見ない。**`bytesPerPixel == 4`（RGBA）のときだけ効く。**
+///     既定は見る ―― 見た目が同じでもデータは違うので、「違う」と答えるほうが嘘にならない。
 public func comparePixels(
     a: [UInt8], sizeA: Size,
     b: [UInt8], sizeB: Size,
-    bytesPerPixel: Int
+    bytesPerPixel: Int,
+    tolerance: Int = 0,
+    ignoreAlpha: Bool = false
 ) -> ImageComparison {
     guard sizeA == sizeB else { return .sizeMismatch(sizeA, sizeB) }
 
@@ -86,12 +94,17 @@ public func comparePixels(
     var changed = 0
     var first: Point? = nil
 
+    // RGBA の 4 本目がアルファ。それ以外の形では落とす対象が決まらないので、
+    // ignoreAlpha は無視する（黙って 3 本目までにすると、別の意味になる）。
+    let channels = (ignoreAlpha && bytesPerPixel == 4) ? 3 : bytesPerPixel
+
     for y in 0..<sizeA.height {
         let rowStart = y * sizeA.width * bytesPerPixel
         for x in 0..<sizeA.width {
             let i = rowStart + x * bytesPerPixel
             var same = true
-            for c in 0..<bytesPerPixel where a[i + c] != b[i + c] {
+            for c in 0..<channels
+            where abs(Int(a[i + c]) - Int(b[i + c])) > tolerance {
                 same = false
                 break
             }
