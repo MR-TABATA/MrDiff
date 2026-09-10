@@ -9,3 +9,8 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# bench が作る材料。1 回で数百 MB になるので、絶対に追跡しない
+# （スクリプト自体は追跡する）
+/bench/data/
+/bench/tmp/

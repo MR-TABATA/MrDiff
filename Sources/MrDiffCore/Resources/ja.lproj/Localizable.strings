@@ -17,7 +17,7 @@
 "error.cannot_open"    = "開けません: %@";
 "error.not_an_image"   = "画像として読めません: %@";
 "error.cannot_decode"  = "読み込めません: %@";
-"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] <a> <b>";
+"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] <a> <b>";
 "error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";
 "error.bad_color"      = "--color には always / never / auto を指定してください";
 "error.mixed_kinds"    = "テキストとテキストでないものは比べられません";

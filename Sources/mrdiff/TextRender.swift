@@ -36,12 +36,75 @@ private func highlight(_ line: String, _ ranges: [Range<Int>], _ s: Style) -> St
     return out
 }
 
+/// 標準出力へ**流しながら**書く。
+///
+/// 最初の実装は組み上げた行を `[String]` で返していた。全行が違う 100 万行 × 2 で
+/// 出力が 200 万行になり、それを全部メモリに持って **734MB・7.7 秒**（判定自体は
+/// 0.14 秒で済んでいた）。**表示のほうが、比較の 50 倍かかっていた。**
+///
+/// 1 行ずつ `print` するのも遅い（毎回ロックと flush が走る）。1MB 溜めて出す。
+struct Out {
+    private var buf = Data()
+    private let limit = 1 << 20
+    /// 書き込み先。ページャを立てたときはその入口、それ以外は標準出力。
+    /// **`FILE *` に揃える** ―― `print` と同じ口なので、順番が入れ替わらない。
+    private var sink: UnsafeMutablePointer<FILE>
+    /// 相手が先に消えたら、書くのをやめる（ページャを q で抜けた場合）
+    private var closed = false
+    /// 一度でも書けたか。**まだ 1 バイトも書けていないうちの失敗は、
+    /// 「読み手が抜けた」ではなく「ページャが立ち上がらなかった」。**
+    private var wroteSomething = false
+
+    init(to sink: UnsafeMutablePointer<FILE> = stdout) {
+        self.sink = sink
+        buf.reserveCapacity(limit + 4096)
+    }
+
+    mutating func line(_ s: String) {
+        guard !closed else { return }
+        buf.append(contentsOf: s.utf8)
+        buf.append(0x0A)
+        if buf.count >= limit { flush() }
+    }
+
+    mutating func flush() {
+        guard !closed, !buf.isEmpty else { return }
+        if write(to: sink) {
+            wroteSomething = true
+        } else if !wroteSomething, sink != stdout {
+            // **1 バイトも書けていないなら、ページャが立ち上がっていない。**
+            // MRDIFF_PAGER を打ち間違えただけで差分が消えるのは、割に合わない。
+            sink = stdout
+            wroteSomething = write(to: sink)
+            if !wroteSomething { closed = true }
+        } else {
+            // 読み手が q で抜けた。**落ちるのではなく、そこでやめる**（git と同じ）。
+            closed = true
+        }
+        buf.removeAll(keepingCapacity: true)
+    }
+
+    private func write(to f: UnsafeMutablePointer<FILE>) -> Bool {
+        buf.withUnsafeBytes { raw -> Bool in
+            guard let p = raw.baseAddress, raw.count > 0 else { return true }
+            return fwrite(p, 1, raw.count, f) == raw.count
+        }
+    }
+}
+
 /// 前後に見せる行数。unified diff と同じ 3。
 let contextLines = 3
 
-/// 差分を組み立てて返す。**`equal` は前後 `contextLines` 行だけ出す。**
-func renderText(_ d: TextDiff, style s: Style) -> [String] {
-    var out: [String] = []
+/// 行内差分を取る上限。**これを超える変更行があれば、行内は見ない。**
+///
+/// 1 行ごとに LCS を回すので、変更行が数十万あると表示だけで数秒かかる。
+/// そもそも 200 万行の差分を人が読むことはなく、**読めない出力のために待たせるほうが害。**
+let charDiffLineBudget = 5_000
+
+/// 差分を書き出す。**`equal` は前後 `contextLines` 行だけ出す。**
+func renderText(_ d: TextDiff, style s: Style, into out: inout Out) {
+    // 変更行が多すぎるときは行内差分を諦める（`charDiffLineBudget`）
+    let inlineOK = d.changed <= charDiffLineBudget
 
     // **行番号は左右 2 列。**1 列だと、削除の行番号（左）と追加の行番号（右）が
     // たまたま同じ数になったとき、どちらの側の話か分からなくなる。
@@ -54,7 +117,7 @@ func renderText(_ d: TextDiff, style s: Style) -> [String] {
     // 省略した行数を、飛ばしたことが分かる形で出す
     func skipped(_ n: Int) {
         guard n > 0 else { return }
-        out.append("\(s.dim)\(String(repeating: " ", count: 11))   … \(n) unchanged\(s.reset)")
+        out.line("\(s.dim)\(String(repeating: " ", count: 11))   … \(n) unchanged\(s.reset)")
     }
 
     for (i, op) in d.ops.enumerated() {
@@ -65,39 +128,38 @@ func renderText(_ d: TextDiff, style s: Style) -> [String] {
             let head = isFirst ? 0 : min(contextLines, count)
             let tail = isLast ? 0 : min(contextLines, count - head)
             for k in 0..<head {
-                out.append("\(s.dim)\(num(l + k, r + k))   \(d.left[l + k])\(s.reset)")
+                out.line("\(s.dim)\(num(l + k, r + k))   \(d.left.line(l + k))\(s.reset)")
             }
             skipped(count - head - tail)
             for k in (count - tail)..<count {
-                out.append("\(s.dim)\(num(l + k, r + k))   \(d.left[l + k])\(s.reset)")
+                out.line("\(s.dim)\(num(l + k, r + k))   \(d.left.line(l + k))\(s.reset)")
             }
 
         case let .delete(l, count):
             for k in 0..<count {
-                out.append("\(s.red)\(num(l + k, nil)) - \(d.left[l + k])\(s.reset)")
+                out.line("\(s.red)\(num(l + k, nil)) - \(d.left.line(l + k))\(s.reset)")
             }
 
         case let .insert(r, count):
             for k in 0..<count {
-                out.append("\(s.green)\(num(nil, r + k)) + \(d.right[r + k])\(s.reset)")
+                out.line("\(s.green)\(num(nil, r + k)) + \(d.right.line(r + k))\(s.reset)")
             }
 
         case let .replace(l, lc, r, rc):
             // 1 対 1 で並ぶぶんだけ行内差分を取る。数が合わない残りは行ごと。
             let pairs = min(lc, rc)
             for k in 0..<pairs {
-                let a = d.left[l + k], b = d.right[r + k]
-                let (lr, rr) = CharDiff.ranges(left: a, right: b)
-                out.append("\(s.red)\(num(l + k, nil)) - \(highlight(a, lr, s))\(s.reset)")
-                out.append("\(s.green)\(num(nil, r + k)) + \(highlight(b, rr, s))\(s.reset)")
+                let a = d.left.line(l + k), b = d.right.line(r + k)
+                let (lr, rr) = inlineOK ? CharDiff.ranges(left: a, right: b) : ([], [])
+                out.line("\(s.red)\(num(l + k, nil)) - \(highlight(a, lr, s))\(s.reset)")
+                out.line("\(s.green)\(num(nil, r + k)) + \(highlight(b, rr, s))\(s.reset)")
             }
             for k in pairs..<lc {
-                out.append("\(s.red)\(num(l + k, nil)) - \(d.left[l + k])\(s.reset)")
+                out.line("\(s.red)\(num(l + k, nil)) - \(d.left.line(l + k))\(s.reset)")
             }
             for k in pairs..<rc {
-                out.append("\(s.green)\(num(nil, r + k)) + \(d.right[r + k])\(s.reset)")
+                out.line("\(s.green)\(num(nil, r + k)) + \(d.right.line(r + k))\(s.reset)")
             }
         }
     }
-    return out
 }

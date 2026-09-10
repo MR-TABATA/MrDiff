@@ -7,10 +7,15 @@ import MrDiffCore
 // **人が読む出力だけ t() を通す。** --json と終了コードは通さない ――
 // 訳すと grep を書いた人のスクリプトが日本語環境で壊れる。
 
+// **ページャを q で抜けたときに SIGPIPE で落ちない。**書き込み側で EPIPE として
+// 受け取り、そこで静かにやめる（Out.flush）。
+signal(SIGPIPE, SIG_IGN)
+
 let args = Array(CommandLine.arguments.dropFirst())
 let wantsJSON = args.contains("--format=json") || args.contains("--json")
 let wantsExitCode = args.contains("--exit-code")
 let ignoreAlpha = args.contains("--ignore-alpha")
+let noPager = args.contains("--no-pager")
 let files = args.filter { !$0.hasPrefix("-") }
 
 func die(_ message: String) -> Never {
@@ -63,8 +68,7 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
     // 行には意味が無い。黙って無視すると「指定したのに効いていない」に気づけない。
     if tolerance > 0 || ignoreAlpha { die(t("error.image_only_flag")) }
 
-    let d = compareText(String(decoding: dataA, as: UTF8.self),
-                        String(decoding: dataB, as: UTF8.self))
+    let d = compareText(TextSource(data: dataA), TextSource(data: dataB))
     if wantsJSON {
         if d.isIdentical {
             print(#"{"result":"identical"}"#)
@@ -74,8 +78,15 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
     } else if d.isIdentical {
         print(t("text.identical"))
     } else {
-        print(t("text.summary", d.changed, d.added, d.removed))
-        for line in renderText(d, style: Style(on: useColor)) { print(line) }
+        // **サマリも同じ口から出す。**print（libc のバッファ）と Out（fd へ直接）を
+        // 混ぜると、順番が入れ替わる ―― 実際にサマリが本文の後ろへ回った。
+        // 端末に出すときだけページャへ渡す。パイプならそのまま流す。
+        let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
+        var out = Out(to: sink ?? stdout)
+        out.line(t("text.summary", d.changed, d.added, d.removed))
+        renderText(d, style: Style(on: useColor), into: &out)
+        out.flush()
+        Pager.finish()
     }
     exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
 }

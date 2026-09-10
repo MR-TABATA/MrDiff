@@ -105,6 +105,54 @@ public enum LineDiff {
         if lr.isEmpty { ops.append(.insert(right: rr.lowerBound, count: rr.count)); return }
         if rr.isEmpty { ops.append(.delete(left: lr.lowerBound, count: lr.count)); return }
 
+        // **表に載せる前に、揃ったまま歩けるところは歩く。**
+        //
+        // 先頭と末尾の共通部分を落としても、変更が離れて点在していれば「真ん中」は
+        // ほぼ全体のまま残る（100 万行で 3 行違うだけの実測で、真ん中が 98 万行）。
+        // そこを丸ごとアンカー表に載せると、3 行のために 243MB と 0.16 秒を払う。
+        //
+        // 大半が一致している 2 本では、真ん中は**一致の連なりと、点在する小さなずれ**
+        // でできている。歩けるところを歩き、ずれたら狭い窓で合流点を探す。
+        // 見つからなければ、残りを今までどおりアンカーへ渡す（**諦めたことが分かる形**）。
+        var li = lr.lowerBound, ri = rr.lowerBound
+        var walked = false
+        while li < lr.upperBound && ri < rr.upperBound {
+            // 揃っているあいだ進む
+            var run = 0
+            while li + run < lr.upperBound && ri + run < rr.upperBound
+                    && l[li + run] == r[ri + run] { run += 1 }
+            if run > 0 {
+                ops.append(.equal(left: li, right: ri, count: run))
+                li += run
+                ri += run
+                walked = true
+                continue
+            }
+            // ずれた。狭い窓で合流点を探す
+            guard let (da, db) = resync(l, r, li..<lr.upperBound, ri..<rr.upperBound) else { break }
+            if da > 0 && db > 0 {
+                ops.append(.replace(left: li, leftCount: da, right: ri, rightCount: db))
+            } else if da > 0 {
+                ops.append(.delete(left: li, count: da))
+            } else {
+                ops.append(.insert(right: ri, count: db))
+            }
+            li += da
+            ri += db
+            walked = true
+        }
+        if li >= lr.upperBound || ri >= rr.upperBound {
+            // 片側が尽きた。残りはまるごと足す / 消す
+            if li < lr.upperBound { ops.append(.delete(left: li, count: lr.upperBound - li)) }
+            if ri < rr.upperBound { ops.append(.insert(right: ri, count: rr.upperBound - ri)) }
+            return
+        }
+        if walked {
+            // 歩けたところまでは片づいた。残りを、この関数の続きへ回す
+            emitMiddle(l, r, li..<lr.upperBound, ri..<rr.upperBound, into: &ops)
+            return
+        }
+
         // アンカー = 左右それぞれで 1 回だけ出てくる、共通の行。
         guard let anchors = uniqueAnchors(l, r, lr, rr), !anchors.isEmpty else {
             // アンカー無し。小さければ Myers、大きければ諦めて replace。
@@ -129,30 +177,58 @@ public enum LineDiff {
         diff(l, r, lPos..<lr.upperBound, rPos..<rr.upperBound, into: &ops)
     }
 
+    /// ずれた地点から、**狭い窓の中だけ**で合流点を探す。
+    ///
+    /// 返すのは「左を何行、右を何行飛ばせば揃うか」。窓の中に無ければ nil で、
+    /// そのときはアンカー探索へ回す ―― **窓を広げて粘らない。**粘ると、
+    /// 大きく入れ替わったファイルで窓の中を延々と探すことになる。
+    ///
+    /// `confirm` 行そろって一致するまで合流と認めない。1 行だけの偶然の一致で
+    /// 合流したことにすると、そこから先が全部ずれて出る。
+    static let resyncWindow = 64
+    static let resyncConfirm = 3
+
+    private static func resync(_ l: [LineHash], _ r: [LineHash],
+                               _ lr: Range<Int>, _ rr: Range<Int>) -> (Int, Int)? {
+        func matches(_ a: Int, _ b: Int) -> Bool {
+            var k = 0
+            while k < resyncConfirm {
+                let li = a + k, ri = b + k
+                // 端に着いたら、そこまで揃っていれば合流と認める
+                if li >= lr.upperBound || ri >= rr.upperBound { return k > 0 }
+                if l[li] != r[ri] { return false }
+                k += 1
+            }
+            return true
+        }
+        // 飛ばす行数の合計が小さい順に見る（小さいずれを優先する）
+        for total in 1...(resyncWindow * 2) {
+            for da in max(0, total - resyncWindow)...min(total, resyncWindow) {
+                let db = total - da
+                let a = lr.lowerBound + da, b = rr.lowerBound + db
+                if a > lr.upperBound || b > rr.upperBound { continue }
+                if matches(a, b) { return (da, db) }
+            }
+        }
+        return nil
+    }
+
     /// 左右それぞれの区間で出現回数 1、かつ両方に在る行を拾い、
     /// 右のインデックスが増加する最長列（LIS）だけ残す＝交差しないアンカー列。
     private static func uniqueAnchors(_ l: [LineHash], _ r: [LineHash],
                                       _ lr: Range<Int>, _ rr: Range<Int>) -> [(Int, Int)]? {
-        var lCount: [LineHash: Int] = [:]
-        var lWhere: [LineHash: Int] = [:]
-        lCount.reserveCapacity(lr.count)
-        for i in lr {
-            lCount[l[i], default: 0] += 1
-            lWhere[l[i]] = i
-        }
-        var rCount: [LineHash: Int] = [:]
-        var rWhere: [LineHash: Int] = [:]
-        rCount.reserveCapacity(rr.count)
-        for i in rr {
-            rCount[r[i], default: 0] += 1
-            rWhere[r[i]] = i
-        }
+        // **Swift の Dictionary は使わない。**ここは区間の行数ぶんだけ引きが走るので、
+        // 1 件あたりの重さがそのまま時間とメモリになる。100 万行で辞書だけが
+        // 250MB 前後を占めていた。鍵は既に 128 ビットのハッシュなので、
+        // 再ハッシュの要らない開番地表で足りる（`AnchorTable`）。
+        var lSeen = AnchorTable(capacity: lr.count)
+        for i in lr { lSeen.add(l[i], at: i) }
+        var rSeen = AnchorTable(capacity: rr.count)
+        for i in rr { rSeen.add(r[i], at: i) }
 
         var pairs: [(Int, Int)] = []
-        for (h, c) in lCount where c == 1 {
-            if rCount[h] == 1, let li = lWhere[h], let ri = rWhere[h] {
-                pairs.append((li, ri))
-            }
+        lSeen.forEachUnique { h, li in
+            if let ri = rSeen.uniqueIndex(of: h) { pairs.append((li, ri)) }
         }
         if pairs.isEmpty { return nil }
         pairs.sort { $0.0 < $1.0 }
@@ -244,5 +320,68 @@ public enum LineDiff {
             }
         }
         return out
+    }
+}
+
+/// アンカー探索用の開番地表。**`LineDiff` の中だけで使う。**
+///
+/// Swift の `Dictionary` は 1 件あたりの確保と再ハッシュが効いてきて、
+/// 100 万行の区間で 250MB 前後・0.2 秒前後を持っていっていた。鍵の `LineHash` は
+/// 既に 128 ビットのハッシュなので、**その下位ビットをそのまま席に使えばよい。**
+///
+/// 中身は「鍵・最後に見た位置・出現回数」を平らな配列に置くだけ。伸長はしない
+/// （必要な席数が最初から分かっている）。
+struct AnchorTable {
+    private struct Slot {
+        var key = LineHash(a: 0, b: 0)
+        var index: Int = -1
+        var count: Int32 = 0
+    }
+    private var slots: [Slot]
+    private let mask: Int
+
+    /// 席は要素数の 2 倍以上の 2 冪。**半分以上を空けておく**と、線形探索が伸びない。
+    init(capacity: Int) {
+        var size = 16
+        while size < capacity * 2 { size <<= 1 }
+        slots = [Slot](repeating: Slot(), count: size)
+        mask = size - 1
+    }
+
+    @inline(__always)
+    private func home(_ key: LineHash) -> Int {
+        Int(truncatingIfNeeded: key.a) & mask
+    }
+
+    mutating func add(_ key: LineHash, at index: Int) {
+        var i = home(key)
+        while true {
+            if slots[i].count == 0 {
+                slots[i] = Slot(key: key, index: index, count: 1)
+                return
+            }
+            if slots[i].key == key {
+                // 2 回目以降。**位置は最後のものを残す**（元の実装と同じ）。
+                slots[i].index = index
+                if slots[i].count < Int32.max { slots[i].count += 1 }
+                return
+            }
+            i = (i + 1) & mask
+        }
+    }
+
+    /// その区間で 1 回だけ出てきた鍵の位置。2 回以上なら nil。
+    func uniqueIndex(of key: LineHash) -> Int? {
+        var i = home(key)
+        while slots[i].count != 0 {
+            if slots[i].key == key { return slots[i].count == 1 ? slots[i].index : nil }
+            i = (i + 1) & mask
+        }
+        return nil
+    }
+
+    /// 1 回だけ出てきたものを順に渡す。
+    func forEachUnique(_ body: (LineHash, Int) -> Void) {
+        for s in slots where s.count == 1 { body(s.key, s.index) }
     }
 }
