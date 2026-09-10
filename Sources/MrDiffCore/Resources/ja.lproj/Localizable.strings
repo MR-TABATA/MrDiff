@@ -1,7 +1,8 @@
 /* 下書き。**本人の確認前。** 訳したものではなく、機能を知っている側が書き直すこと。 */
 
 "images.identical"     = "違いはありません";
-"images.differ"        = "%@%% の画素が違います（%d / %d）";
+"images.differ"        = "%d / %d 画素が違います（%@%%）";
+"images.differ.tiny"   = "%d / %d 画素が違います";
 "images.first"         = "最初の違いは (%d, %d)";
 "images.size_mismatch" = "大きさが違います — %dx%d と %dx%d";
 

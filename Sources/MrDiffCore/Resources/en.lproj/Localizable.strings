@@ -1,7 +1,8 @@
 /* 人が読む出力。機械向け（--format json）はここを通さない。 */
 
 "images.identical"     = "Images are identical";
-"images.differ"        = "Images differ — %@%% of pixels (%d / %d)";
+"images.differ"        = "Images differ — %d of %d pixels (%@%%)";
+"images.differ.tiny"   = "Images differ — %d of %d pixels";
 "images.first"         = "First difference at (%d, %d)";
 "images.size_mismatch" = "Images differ in size — %dx%d vs %dx%d";
 

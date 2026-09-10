@@ -42,6 +42,17 @@ public struct PixelDiff: Equatable, Sendable {
     public var fraction: Double {
         total == 0 ? 0 : Double(changed) / Double(total)
     }
+
+    /// 人に見せる割合。**丸めて消えるなら nil。**
+    ///
+    /// 小数第 1 位まで出すので、400x300 の画像で 1 画素だけ違うと `0.0` になる。
+    /// `0.0%` は「違う」ではなく**「同じ」と読める**ので、そこは割合で語らない。
+    /// 数（`changed` / `total`）は消えないので、そちらで言う。
+    public var displayPercent: String? {
+        let p = fraction * 100
+        guard p >= 0.05 else { return nil }   // %.1f が "0.0" になる境目
+        return String(format: "%.1f", p)
+    }
 }
 
 /// 比較の結果。**3 つとも答え**で、どれも失敗ではない。

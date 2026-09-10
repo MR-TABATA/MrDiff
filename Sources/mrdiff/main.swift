@@ -29,8 +29,6 @@ do {
     die("\(error)")
 }
 
-func percent(_ f: Double) -> String { String(format: "%.1f", f * 100) }
-
 switch result {
 case .identical:
     if wantsJSON { print(#"{"result":"identical"}"#) }
@@ -49,7 +47,13 @@ case .differ(let d):
     if wantsJSON {
         print(#"{"result":"differ","changed":\#(d.changed),"total":\#(d.total),"fraction":\#(d.fraction),"first":{"x":\#(d.first.x),"y":\#(d.first.y)}}"#)
     } else {
-        print(t("images.differ", percent(d.fraction), d.changed, d.total))
+        // **数を先に言う。**割合は、丸めて消えないときだけ添える ――
+        // 「0.0%」は「同じ」と読めてしまう（PixelDiff.displayPercent）。
+        if let pct = d.displayPercent {
+            print(t("images.differ", d.changed, d.total, pct))
+        } else {
+            print(t("images.differ.tiny", d.changed, d.total))
+        }
         print(t("images.first", d.first.x, d.first.y))
     }
     exit(wantsExitCode ? 1 : 0)

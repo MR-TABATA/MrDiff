@@ -58,22 +58,43 @@ final class PixelDiffTests: XCTestCase {
         XCTAssertEqual(d.first, Point(x: 0, y: 0))
     }
 
-    /// **現状**: 大きい画像では、1 画素の違いが `0.0%` と表示される。
-    /// 「同じ」と読めてしまう。**割合ではなく数や領域で言うべき**、という宿題。
+    /// **直した症状**: 大きい画像で 1 画素だけ違うと `0.0%` と出て、「同じ」と読めた。
+    /// 割合が丸めて消える大きさでは、**割合を出さない**（数は消えないので数で言う）。
     ///
     /// 小さい画像では起きない（40x30 なら 1/1200 = 0.083% → `0.1`）ので、
     /// ファイルではなく比率を直に置いて固定する。
-    func test_現状_大きい画像だと1画素の違いが0パーセントになる() {
+    func test_大きい画像では割合を出さない() {
         let d = PixelDiff(changed: 1, total: 120_000, first: Point(x: 0, y: 0))
-        XCTAssertEqual(String(format: "%.1f", d.fraction * 100), "0.0",
-                       "400x300 で 1 画素違うと、表示上は 0.0% になる")
-        XCTAssertEqual(d.changed, 1, "実際には 1 画素違う")
+        XCTAssertNil(d.displayPercent, "400x300 で 1 画素 ―― 出せば 0.0% になる")
+        XCTAssertEqual(d.changed, 1, "数のほうは消えない")
+        XCTAssertEqual(d.total, 120_000)
     }
 
-    /// 4K のスクリーンショットだと、さらに見えなくなる。
-    func test_現状_4Kだと1画素の違いはもっと消える() {
+    /// 4K のスクリーンショットだと、さらに小さくなる。それでも数は残る。
+    func test_4Kでも割合を出さない() {
         let d = PixelDiff(changed: 1, total: 3840 * 2160, first: Point(x: 0, y: 0))
-        XCTAssertEqual(String(format: "%.1f", d.fraction * 100), "0.0")
+        XCTAssertNil(d.displayPercent)
+        XCTAssertEqual(d.changed, 1)
+    }
+
+    /// 丸めて残るなら、割合は出す。
+    func test_丸めて残るなら割合を出す() {
+        XCTAssertEqual(PixelDiff(changed: 1, total: 1_200,
+                                 first: Point(x: 0, y: 0)).displayPercent, "0.1",
+                       "40x30 で 1 画素 = 0.083% → 0.1")
+        XCTAssertEqual(PixelDiff(changed: 300, total: 1_200,
+                                 first: Point(x: 0, y: 0)).displayPercent, "25.0")
+        XCTAssertEqual(PixelDiff(changed: 1_200, total: 1_200,
+                                 first: Point(x: 0, y: 0)).displayPercent, "100.0")
+    }
+
+    /// 境目は「%.1f が 0.0 になるかどうか」＝ 0.05%。またぐ両側を固定する。
+    func test_割合を出すかの境目() {
+        XCTAssertNil(PixelDiff(changed: 4, total: 10_000,
+                               first: Point(x: 0, y: 0)).displayPercent, "0.04% は出さない")
+        XCTAssertEqual(PixelDiff(changed: 6, total: 10_000,
+                                 first: Point(x: 0, y: 0)).displayPercent, "0.1",
+                       "0.06% は 0.1 として出す")
     }
 
     func test_0画素なら_identical() {
