@@ -44,10 +44,15 @@ public enum Input {
 
     /// 中身を取る。
     public func read(timeout: TimeInterval = 30) throws -> Data {
+        try readDetailed(timeout: timeout).data
+    }
+
+    /// 中身と、**飛ばされた先**（URL のときだけ・同じなら nil）。
+    public func readDetailed(timeout: TimeInterval = 30) throws -> Fetched {
         switch self {
-        case .file(let u):  return try readFile(u)
-        case .url(let u):   return try fetch(u, timeout: timeout)
-        case .clipboard:    return try readClipboard()
+        case .file(let u):  return Fetched(data: try readFile(u), finalURL: nil)
+        case .url(let u):   return try fetchDetailed(u, timeout: timeout)
+        case .clipboard:    return Fetched(data: try readClipboard(), finalURL: nil)
         }
     }
 }
@@ -77,14 +82,32 @@ public enum InputError: Error, CustomStringConvertible {
 /// ごまかすと「違わないはずが違う」と言い出す道具になる。
 ///
 /// 画像を返す URL なら画像として比べられる（読んだ後は同じ道を通るため）。
+///
+/// ## 飛ばされたら、そう言う
+///
+/// リダイレクトは追う（追わないと、ほとんどのサイトで本文が取れない）。ただし
+/// **指定した URL と、実際に中身を取った URL が違うなら、それは言う** ――
+/// `https://example.com` と打って `https://www.example.com/ja/` を比べていた、が
+/// 黙って起きるのは、画像で「緩めて比べたならそう言う」としているのと同じ問題。
 public func fetch(_ url: URL, timeout: TimeInterval = 30) throws -> Data {
+    try fetchDetailed(url, timeout: timeout).data
+}
+
+/// 中身と、**実際に取れた URL**。
+public struct Fetched {
+    public let data: Data
+    /// リダイレクトの果て。指定した URL と同じなら nil。
+    public let finalURL: URL?
+}
+
+public func fetchDetailed(_ url: URL, timeout: TimeInterval = 30) throws -> Fetched {
     var request = URLRequest(url: url, timeoutInterval: timeout)
     // **名乗る。** 名乗らないと弾くサーバがあり、その 403 は利用者には理由が分からない。
     request.setValue("mrdiff", forHTTPHeaderField: "User-Agent")
     // キャッシュを使わない。**比べる相手が古い写しでは意味が無い。**
     request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
-    var result: Result<Data, InputError>!
+    var result: Result<Fetched, InputError>!
     let done = DispatchSemaphore(value: 0)
     URLSession.shared.dataTask(with: request) { data, response, error in
         defer { done.signal() }
@@ -96,10 +119,28 @@ public func fetch(_ url: URL, timeout: TimeInterval = 30) throws -> Data {
             result = .failure(.http(http.statusCode, url))
             return
         }
-        result = .success(data ?? Data())
+        let landed = response?.url
+        let moved = (landed.map { !sameDestination($0, url) } ?? false) ? landed : nil
+        result = .success(Fetched(data: data ?? Data(), finalURL: moved))
     }.resume()
     done.wait()
     return try result.get()
+}
+
+/// 同じ行き先か。
+///
+/// **末尾のスラッシュだけの違いは、飛ばされたと言わない。** `https://example.com` を
+/// 打つと `https://example.com/` が返る ―― これはリダイレクトではなく、空のパスが
+/// 補われただけ。これを「飛ばされました」と出すと、**本物の警告まで信用されなくなる。**
+public func sameDestination(_ a: URL, _ b: URL) -> Bool {
+    func normalized(_ u: URL) -> String {
+        guard var c = URLComponents(url: u, resolvingAgainstBaseURL: false) else {
+            return u.absoluteString
+        }
+        if c.path.isEmpty { c.path = "/" }
+        return c.string ?? u.absoluteString
+    }
+    return normalized(a) == normalized(b)
 }
 
 // MARK: - クリップボード

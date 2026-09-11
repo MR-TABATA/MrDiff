@@ -61,11 +61,27 @@ if useClipboard {
 }
 
 let dataA: Data, dataB: Data
+var redirects: [String] = []
 do {
-    dataA = try inputs[0].read()
-    dataB = try inputs[1].read()
+    let ra = try inputs[0].readDetailed()
+    let rb = try inputs[1].readDetailed()
+    dataA = ra.data
+    dataB = rb.data
+    // **飛ばされたら、そう言う。**打った URL と中身を取った URL が違うのに黙っていると、
+    // 「何と何を比べた結果なのか」が消える。
+    for (input, fetched) in zip(inputs, [ra, rb]) {
+        if let landed = fetched.finalURL {
+            redirects.append(t("note.redirected", input.label, landed.absoluteString))
+        }
+    }
 } catch {
     die("\(error)")
+}
+
+/// 飛ばし先の注意書きを出す。**JSON には出さない**（機械向けは静かに保つ）。
+func printRedirects() {
+    guard !wantsJSON else { return }
+    for line in redirects { print("  " + line) }
 }
 
 // 画像の比較だけは**ファイルの URL が要る**（ImageIO へ渡すため）。
@@ -92,6 +108,7 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
         }
     } else if d.isIdentical {
         print(t("text.identical"))
+        printRedirects()
     } else {
         // **サマリも同じ口から出す。**print（libc のバッファ）と Out（fd へ直接）を
         // 混ぜると、順番が入れ替わる ―― 実際にサマリが本文の後ろへ回った。
@@ -99,6 +116,7 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
         let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
         var out = Out(to: sink ?? stdout)
         out.line(t("text.summary", d.changed, d.added, d.removed))
+        for line in redirects { out.line("  " + line) }
         renderText(d, style: Style(on: useColor), into: &out)
         out.flush()
         Pager.finish()
@@ -129,6 +147,7 @@ if !imageA {
         }
     } else if d.isIdentical {
         print(t("binary.identical"))
+        printRedirects()
     } else {
         // **長さの違いは、箇所の数と別に言う。** 1 バイト挿入で以降が全部ずれた結果を
         // 「全部違う」とだけ出すのは、正しいが役に立たない。
@@ -143,6 +162,7 @@ if !imageA {
             print("  " + t("binary.bytes", d.differingBytes, min(d.sizeA, d.sizeB)))
         }
         // **どこまで比べたかを言う。**余りは比べていない。
+        printRedirects()
         if d.sizeA != d.sizeB {
             // 共通部分に違いが無いなら、そう言う。**言わないと「長さしか見ていない」のか
             // 「中身も違う」のかが読めない。**
@@ -183,6 +203,7 @@ case .identical:
     if wantsJSON { print(#"{"result":"identical"}"#) }
     else {
         print(t("images.identical"))
+        printRedirects()
         if let note { print("  " + note) }
     }
     exit(0)
@@ -207,6 +228,7 @@ case .differ(let d):
             print(t("images.differ.tiny", d.changed, d.total))
         }
         print(t("images.first", d.first.x, d.first.y))
+        printRedirects()
         if let note { print("  " + note) }
     }
     exit(wantsExitCode ? 1 : 0)

@@ -47,6 +47,26 @@ final class InputTests: XCTestCase {
         XCTAssertEqual(Input.parse("/tmp/a/b/notes.md").label, "notes.md")
     }
 
+    // MARK: - 飛ばし先
+
+    /// **末尾のスラッシュだけの違いは「飛ばされた」ではない。**
+    /// これを出すと、本物の警告まで信用されなくなる。
+    func testTrailingSlashIsNotARedirect() {
+        XCTAssertTrue(sameDestination(URL(string: "https://example.com")!,
+                                      URL(string: "https://example.com/")!))
+    }
+
+    func testRealRedirectsAreDifferent() {
+        XCTAssertFalse(sameDestination(URL(string: "http://github.com")!,
+                                       URL(string: "https://github.com/")!), "http→https は別")
+        XCTAssertFalse(sameDestination(URL(string: "https://example.com/")!,
+                                       URL(string: "https://example.com/ja/")!), "パスが別")
+        XCTAssertFalse(sameDestination(URL(string: "https://example.com/a")!,
+                                       URL(string: "https://example.com/a?x=1")!), "クエリが別")
+        XCTAssertFalse(sameDestination(URL(string: "https://example.com")!,
+                                       URL(string: "https://www.example.com")!), "ホストが別")
+    }
+
     // MARK: - クリップボード
 
     /// 文字が入っていれば、そのまま読める。

@@ -40,3 +40,4 @@
 "error.no_clipboard"   = "この環境ではクリップボードを使えません";
 "error.clipboard_needs_one" = "--clipboard は、比べる相手のファイルか URL を 1 つ取ります";
 "note.fetched"         = "%@ と %@ を取得しました";
+"note.redirected"      = "%@ は %@ へ飛ばされました";
