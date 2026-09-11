@@ -22,7 +22,8 @@ $ mrdiff config.json config-new.json
 5 changed, 1 added, 0 removed
 ```
 
-> **Status: text, images, binaries, URLs and the clipboard all work.**
+> **Status: text, images, binaries, URLs, the clipboard, a site-vs-git check and
+> SSH (single file and whole directory) all work.**
 > This README is still partly design. Numbers marked `TODO` are unmeasured —
 > they will be filled in from real runs, not estimates.
 
