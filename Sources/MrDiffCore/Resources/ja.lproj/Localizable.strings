@@ -54,3 +54,14 @@
 "error.not_git"        = "%@ は git リポジトリの中ではありません";
 "error.git_failed"     = "git が失敗しました: %@";
 "error.git_missing"    = "git が入っていません";
+"error.ssh_failed"     = "%@ を ssh で取得できません: %@";
+
+/* SSH ディレクトリ diff（両方向）。 */
+"tree.changed"         = "違う   %@";
+"tree.only_local"      = "手元だけ（未デプロイ）   %@";
+"tree.only_remote"     = "リモートだけ（置き忘れ？）   %@";
+"tree.in_sync"         = "同期しています ── %d 個が一致";
+"tree.summary"         = "違う %d／手元だけ %d／リモートだけ %d";
+"error.ssh_usage"      = "使い方: mrdiff --ssh <ローカルのフォルダ> <host:/path>";
+"error.ssh_list_failed" = "リモートのフォルダを一覧できません: %@";
+"error.not_a_dir"      = "%@ はフォルダではありません";

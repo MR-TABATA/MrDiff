@@ -17,7 +17,9 @@ final class InputTests: XCTestCase {
         if case .url = Input.parse("http://example.com/a") {} else { XCTFail("http が URL でない") }
     }
 
-    /// **http(s) 以外は URL にしない。** 黙って別のものを取りに行くより、開けないと言うほうがよい。
+    /// **http(s) 以外のスキームは URL にも SSH にもしない、ファイル扱い。**
+    /// 黙って別のものを取りに行くより、開けないと言うほうがよい。`://` を見て弾く
+    /// （さもないと `s3:` などが host:path の SSH に化ける）。
     func testOtherSchemesAreFiles() {
         for arg in ["file:///etc/hosts", "ftp://example.com/a", "s3://bucket/key"] {
             if case .file = Input.parse(arg) {} else { XCTFail("\(arg) をファイル扱いにしていない") }
@@ -45,6 +47,47 @@ final class InputTests: XCTestCase {
 
     func testFileLabelIsTheName() {
         XCTAssertEqual(Input.parse("/tmp/a/b/notes.md").label, "notes.md")
+    }
+
+    // MARK: - SSH（host:/path）
+
+    func testSSHRemote() {
+        if case .ssh(let h, let p) = Input.parse("web01:/var/www/index.html") {
+            XCTAssertEqual(h, "web01")
+            XCTAssertEqual(p, "/var/www/index.html")
+        } else { XCTFail("host:/path を SSH として読めていない") }
+    }
+
+    func testSSHWithUser() {
+        if case .ssh(let h, let p) = Input.parse("deploy@example.com:app/config.yml") {
+            XCTAssertEqual(h, "deploy@example.com")
+            XCTAssertEqual(p, "app/config.yml")
+        } else { XCTFail("user@host: を読めていない") }
+    }
+
+    /// **相対パスに : が入っただけのものを SSH と誤らない。**
+    func testRelativePathWithColonIsAFile() {
+        if case .file = Input.parse("./notes:draft.md") {} else { XCTFail("SSH にしてしまった（./ 始まり）") }
+    }
+
+    /// ホスト部に / があれば SSH ではない。
+    func testPathWithColonDeepIsFile() {
+        if case .file = Input.parse("some/dir:name/x") {} else { XCTFail("SSH にしてしまった（/ を含む）") }
+    }
+
+    /// http(s) は : があっても URL のまま（SSH に横取りさせない）。
+    func testHTTPStaysURL() {
+        if case .url = Input.parse("https://example.com:8080/a") {} else { XCTFail("URL でなくなった") }
+    }
+
+    /// : が無ければただのファイル。
+    func testNoColonIsFile() {
+        if case .file = Input.parse("index.html") {} else { XCTFail("ファイルでない") }
+    }
+
+    /// SSH の label は host:path をそのまま返す。
+    func testSSHLabel() {
+        XCTAssertEqual(Input.parse("web01:/etc/app.conf").label, "web01:/etc/app.conf")
     }
 
     // MARK: - 飛ばし先

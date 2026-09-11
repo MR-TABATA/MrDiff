@@ -54,3 +54,14 @@
 "error.not_git"        = "%@ is not inside a git repository";
 "error.git_failed"     = "git failed: %@";
 "error.git_missing"    = "git is not installed";
+"error.ssh_failed"     = "cannot fetch %@ over ssh: %@";
+
+/* SSH ディレクトリ diff（両方向）。 */
+"tree.changed"         = "changed   %@";
+"tree.only_local"      = "only local (not deployed)   %@";
+"tree.only_remote"     = "only on remote (left over?)   %@";
+"tree.in_sync"         = "In sync — %d files match";
+"tree.summary"         = "%d changed, %d only local, %d only on remote";
+"error.ssh_usage"      = "usage: mrdiff --ssh <local-dir> <host:/path>";
+"error.ssh_list_failed" = "cannot list the remote directory: %@";
+"error.not_a_dir"      = "%@ is not a directory";

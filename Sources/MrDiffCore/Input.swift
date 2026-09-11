@@ -20,6 +20,8 @@ public enum Input {
     case file(URL)
     case url(URL)
     case clipboard
+    /// `host:/path`。**scp で取る**（認証は OS の ssh に任せる）。
+    case ssh(host: String, path: String)
 
     /// 引数 1 つを入れ物に読み替える。
     ///
@@ -30,7 +32,34 @@ public enum Input {
            let u = URL(string: argument) {
             return .url(u)
         }
+        if let ssh = parseSSH(argument) { return ssh }
         return .file(URL(fileURLWithPath: argument))
+    }
+
+    /// `host:/path` / `user@host:path` を見分ける。**Windows のドライブ文字（`C:\...`）と
+    /// 取り違えない**よう、`:` の前が 1 文字なら SSH にしない（が、対象は macOS なので主眼は
+    /// 「相対パスに `:` が入っただけ」を SSH と誤らないこと）。
+    ///
+    /// SSH と見なす条件: `:` があり、その前に `/` が無く（`./a:b` を弾く）、`:` の前が
+    /// **ホスト名として妥当**（英数・`.`・`-`・`@`・`_`）であること。
+    static func parseSSH(_ arg: String) -> Input? {
+        // `scheme://…`（file / ftp / s3 など）は SSH ではない。**`://` を先に弾く。**
+        // http(s) は parse で処理済みだが、それ以外のスキームも「別のもの」なので
+        // scp で取りに行かない ―― 黙って ssh を走らせるより、ファイル扱いで「開けない」が正。
+        if arg.contains("://") { return nil }
+        guard let colon = arg.firstIndex(of: ":") else { return nil }
+        let hostPart = String(arg[..<colon])
+        let path = String(arg[arg.index(after: colon)...])
+        guard !hostPart.isEmpty, !path.isEmpty else { return nil }
+        // ホスト部に `/` があれば URL かパス。
+        if hostPart.contains("/") { return nil }
+        // ホスト部が英数と @ . - _ だけからなること。
+        let ok = hostPart.unicodeScalars.allSatisfy {
+            CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.@-_").contains($0)
+        }
+        // 1 文字のホストは、ドライブ文字らしさより実在ホストらしさが薄い＝SSH にしない。
+        guard ok, hostPart.count >= 2 else { return nil }
+        return .ssh(host: hostPart, path: path)
     }
 
     /// 画面に出す名前。
@@ -39,6 +68,7 @@ public enum Input {
         case .file(let u):  return u.lastPathComponent
         case .url(let u):   return u.absoluteString
         case .clipboard:    return t("input.clipboard")
+        case .ssh(let h, let p): return "\(h):\(p)"
         }
     }
 
@@ -53,6 +83,7 @@ public enum Input {
         case .file(let u):  return Fetched(data: try readFile(u), finalURL: nil)
         case .url(let u):   return try fetchDetailed(u, timeout: timeout)
         case .clipboard:    return Fetched(data: try readClipboard(), finalURL: nil)
+        case .ssh(let h, let p): return Fetched(data: try scpFetch(host: h, path: p), finalURL: nil)
         }
     }
 }
@@ -62,6 +93,7 @@ public enum InputError: Error, CustomStringConvertible {
     case network(String, URL)
     case emptyClipboard
     case clipboardUnavailable
+    case sshFailed(String, String)   // (host:path, stderr)
 
     public var description: String {
         switch self {
@@ -69,6 +101,7 @@ public enum InputError: Error, CustomStringConvertible {
         case .network(let why, let u):  return t("error.fetch_failed", u.absoluteString, why)
         case .emptyClipboard:           return t("error.empty_clipboard")
         case .clipboardUnavailable:     return t("error.no_clipboard")
+        case .sshFailed(let target, let why): return t("error.ssh_failed", target, why)
         }
     }
 }
@@ -163,4 +196,32 @@ public func readClipboard() throws -> Data {
     #else
     throw InputError.clipboardUnavailable
     #endif
+}
+
+
+// MARK: - SSH
+
+/// リモートの 1 ファイルを取る。**`scp` を呼ぶだけ** ―― 鍵・~/.ssh/config・エージェントは
+/// OS の ssh に任せる。パスワードやポートを自分で受け取らない（そこがバグと事故の温床）。
+public func scpFetch(host: String, path: String) throws -> Data {
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("mrdiff-scp-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: tmp) }
+
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    // `-B`＝パスワードを対話で聞かない（CLI が固まらない。鍵が無ければ即失敗させる）。
+    // `-p`＝パーミッションと時刻を保つ（比較には使わないが scp の作法）。
+    p.arguments = ["scp", "-Bp", "\(host):\(path)", tmp.path]
+    let err = Pipe()
+    p.standardError = err
+    p.standardOutput = Pipe()
+    do { try p.run() } catch { throw InputError.sshFailed("\(host):\(path)", "scp not found") }
+    let errText = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    p.waitUntilExit()
+    guard p.terminationStatus == 0 else {
+        throw InputError.sshFailed("\(host):\(path)",
+                                   errText.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    return try Data(contentsOf: tmp)
 }

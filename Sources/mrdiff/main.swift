@@ -48,6 +48,55 @@ let useColor: Bool = {
     return isatty(FileHandle.standardOutput.fileDescriptor) == 1
 }()
 
+// **SSH ディレクトリ diff。** ローカルのフォルダと、SSH 越しのリモートのフォルダを
+// 両方向で突き合わせる。サイト diff（HTTP・片方向）と違い、リモートも列挙できるので
+//   ローカルに無くリモートにある（＝置き忘れ）まで出せる。
+//   mrdiff --ssh ./site host:/var/www
+if args.contains("--ssh") {
+    // 位置引数: ローカルのフォルダ 1 つと、host:path 1 つ。
+    var localDirs: [String] = []
+    var remotes: [(String, String)] = []
+    for arg in files {
+        if case .ssh(let h, let p) = Input.parse(arg) { remotes.append((h, p)) }
+        else if !arg.hasPrefix("http") { localDirs.append(arg) }
+    }
+    guard localDirs.count == 1, remotes.count == 1 else { die(t("error.ssh_usage")) }
+    let localDir = URL(fileURLWithPath: localDirs[0], isDirectory: true)
+    let (host, remotePath) = remotes[0]
+
+    let left: [String: String], right: [String: String]
+    do {
+        left = try RemoteTree.local(localDir)
+        right = try RemoteTree.ssh(host: host, path: remotePath)
+    } catch { die("\(error)") }
+
+    let d = TreeDiff.compare(
+        leftPaths: left.keys.sorted(), rightPaths: right.keys.sorted(),
+        leftHash: { left[$0] }, rightHash: { right[$0] })
+
+    if wantsJSON {
+        func esc(_ s: String) -> String { s.replacingOccurrences(of: "\"", with: "\\\"") }
+        func rows(_ rs: [TreeDiff.Row], _ st: String) -> [String] {
+            rs.map { "{\"path\":\"\(esc($0.path))\",\"status\":\"\(st)\"}" }
+        }
+        let items = rows(d.changed, "changed") + rows(d.onlyLeft, "only_local")
+                  + rows(d.onlyRight, "only_remote")
+        print("{\"in_sync\":\(d.allIdentical),\"changed\":\(d.changed.count),"
+              + "\"only_local\":\(d.onlyLeft.count),\"only_remote\":\(d.onlyRight.count),"
+              + "\"rows\":[\(items.joined(separator: ","))]}")
+    } else {
+        for r in d.changed   { print(t("tree.changed", r.path)) }
+        for r in d.onlyLeft  { print(t("tree.only_local", r.path)) }
+        for r in d.onlyRight { print(t("tree.only_remote", r.path)) }
+        if d.allIdentical {
+            print(t("tree.in_sync", d.identical.count))
+        } else {
+            print(t("tree.summary", d.changed.count, d.onlyLeft.count, d.onlyRight.count))
+        }
+    }
+    exit(d.allIdentical ? 0 : (wantsExitCode ? 1 : 0))
+}
+
 // **サイト diff。** git 管理下の公開フォルダと、公開中のサイトを突き合わせる。
 //   mrdiff --site https://example.com ./site
 // git が「意図」の記録。載っているものがサイトにあるべきもの。CLI は無料（GUI が有償）。

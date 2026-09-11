@@ -44,6 +44,7 @@ a binary, or a 10 GB log where you only care whether anything moved.
 | **Two URLs** | fetch both, diff the source they return |
 | Clipboard | compare what you just copied against a file or a URL |
 | **A site vs its source** | check whether a deployed site matches the git-tracked folder it was built from |
+| **A local dir vs a server** | over SSH, both ways — including files left on the server that are not in your local copy |
 
 ## Install
 
@@ -60,6 +61,8 @@ mrdiff a.bin b.bin                    # binary — summary
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # clipboard vs file
 mrdiff --site https://example.com ./site   # is the live site in sync with ./site?
+mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
+mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
 
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --format json a.bin b.bin      # machine readable
@@ -143,6 +146,31 @@ there is no way to enumerate what the site actually holds; the command says so e
 time rather than implying the site is clean.
 
 `--exit-code` makes it a deploy check for CI.
+
+### Over SSH
+
+```
+mrdiff local.conf host:/etc/nginx/nginx.conf     # one file
+mrdiff --ssh ./site deploy@host:/var/www         # a whole directory
+```
+
+`host:/path` is fetched with `scp`; `--ssh` walks a whole tree. Authentication is left
+entirely to your `ssh` — keys, `~/.ssh/config`, agent forwarding all work because
+mrdiff shells out to `ssh`/`scp` rather than reimplementing any of it, and it never
+asks for a password (a host it cannot reach without one simply fails).
+
+Unlike `--site`, an SSH directory diff sees **both sides**, so it reports the third
+thing a deploy check usually cannot:
+
+```
+changed   config/app.yml
+only local (not deployed)   pages/new.html
+only on remote (left over?)   backups/customers.sql     ← not in your local copy
+```
+
+That last line is the point for anyone maintaining a server: a file sitting in the
+web root that is not in your repo — an old export, a forgotten backup — is exactly
+what you want flagged, and over SSH the remote side can be listed, so it can be.
 
 ### In CI
 
