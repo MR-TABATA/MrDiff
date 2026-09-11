@@ -48,19 +48,34 @@ let useColor: Bool = {
     return isatty(FileHandle.standardOutput.fileDescriptor) == 1
 }()
 
-guard files.count == 2 else { die(t("error.usage")) }
+// **入れ物は 3 種類**（ファイル・URL・クリップボード）。取ってきた後は同じ道を通る。
+let useClipboard = args.contains("--clipboard")
+let inputs: [Input]
+if useClipboard {
+    // `mrdiff --clipboard notes.md` ＝ クリップボード vs 相手 1 つ。
+    guard files.count == 1 else { die(t("error.clipboard_needs_one")) }
+    inputs = [.clipboard, Input.parse(files[0])]
+} else {
+    guard files.count == 2 else { die(t("error.usage")) }
+    inputs = [Input.parse(files[0]), Input.parse(files[1])]
+}
 
-let a = URL(fileURLWithPath: files[0])
-let b = URL(fileURLWithPath: files[1])
-
-// **種類は中身で決める。**拡張子は見ない（.txt でない設定ファイルのほうが多い）。
-// テキストが 2 つなら行差分、そうでなければ画像として読む。
 let dataA: Data, dataB: Data
 do {
-    dataA = try readFile(a)
-    dataB = try readFile(b)
+    dataA = try inputs[0].read()
+    dataB = try inputs[1].read()
 } catch {
     die("\(error)")
+}
+
+// 画像の比較だけは**ファイルの URL が要る**（ImageIO へ渡すため）。
+// URL やクリップボードから来たものは、一時ファイルへ書いてから渡す。
+func fileURL(for input: Input, data: Data, suffix: String) throws -> URL {
+    if case .file(let u) = input { return u }
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("mrdiff-\(UUID().uuidString)-\(suffix)")
+    try data.write(to: tmp)
+    return tmp
 }
 
 if detectKind(dataA) == .text && detectKind(dataB) == .text {
@@ -140,7 +155,16 @@ if !imageA {
 
 let result: ImageComparison
 do {
-    result = try compareImages(a, b, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+    let ua = try fileURL(for: inputs[0], data: dataA, suffix: "a")
+    let ub = try fileURL(for: inputs[1], data: dataB, suffix: "b")
+    defer {
+        // 一時ファイルは残さない（元がファイルなら消さない）。
+        for (input, url) in zip(inputs, [ua, ub]) {
+            if case .file = input { continue }
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+    result = try compareImages(ua, ub, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
 } catch {
     die("\(error)")
 }

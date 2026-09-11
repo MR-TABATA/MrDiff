@@ -17,17 +17,26 @@
 "error.cannot_open"    = "開けません: %@";
 "error.not_an_image"   = "画像として読めません: %@";
 "error.cannot_decode"  = "読み込めません: %@";
-"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] <a> <b>";
+"error.usage"          = "使い方: mrdiff [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] <a> <b>\n       a と b はファイルか http(s) の URL。--clipboard のときは 1 つだけ渡す";
 "error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";
 "error.bad_color"      = "--color には always / never / auto を指定してください";
 "error.mixed_kinds"    = "テキストとテキストでないものは比べられません";
 "error.image_only_flag" = "--tolerance と --ignore-alpha は画像用です。テキストには使えません";
 
 /* バイナリ。人が読む出力だけ。 */
-"binary.identical"     = "バイナリは同じです";
+"binary.identical"     = "違いはありません（バイナリ）";
 "binary.differ"        = "バイナリが違います ── %d 箇所、最初は %@";
 "binary.differ.one"    = "バイナリが違います ── 1 箇所、%@";
 "binary.bytes"         = "%d / %d バイトが違います";
 "binary.size"          = "長さが違います ── %d と %d バイト（%d バイトの差）";
 "binary.common_only"   = "共通する先頭 %d バイトだけを比べました";
 "binary.common_same"   = "共通する先頭 %d バイトは同じです";
+
+/* 入れ物（ファイル・URL・クリップボード）。 */
+"input.clipboard"      = "クリップボード";
+"error.http_status"    = "%2$@ が HTTP %1$d を返しました";
+"error.fetch_failed"   = "%@ を取得できません: %@";
+"error.empty_clipboard" = "クリップボードが空です（または比べられるものが入っていません）";
+"error.no_clipboard"   = "この環境ではクリップボードを使えません";
+"error.clipboard_needs_one" = "--clipboard は、比べる相手のファイルか URL を 1 つ取ります";
+"note.fetched"         = "%@ と %@ を取得しました";

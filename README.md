@@ -22,7 +22,7 @@ $ mrdiff config.json config-new.json
 5 changed, 1 added, 0 removed
 ```
 
-> **Status: text, images and binaries work. URL and clipboard do not.**
+> **Status: text, images, binaries, URLs and the clipboard all work.**
 > This README is still partly design. Numbers marked `TODO` are unmeasured —
 > they will be filled in from real runs, not estimates.
 
@@ -41,8 +41,8 @@ a binary, or a 10 GB log where you only care whether anything moved.
 | **Text and source** | line diff, colored, with character-level highlight |
 | **Images** | do they differ, what fraction of pixels, where is the first one |
 | **Binaries** | do they differ, how many regions, offset of the first |
-| **Two URLs** | fetch both, diff the HTML source |
-| Clipboard | compare what you just copied against a file |
+| **Two URLs** | fetch both, diff the source they return |
+| Clipboard | compare what you just copied against a file or a URL |
 
 ## Install
 
@@ -98,6 +98,21 @@ A lossy re-encode does not collapse to zero at a small tolerance: on the test
 pair the largest per-channel gap is 36, so `--tolerance=2` still leaves half the
 pixels different. Read it as a measure of how far the values have spread, not as
 a way to call two files the same.
+
+### URLs and the clipboard
+
+`mrdiff https://a https://b` fetches both and compares **what the server returned** —
+no JavaScript is run and nothing is rendered, so the answer can differ from what a
+browser shows you. That is outside what this tool can honestly answer, and pretending
+otherwise would make it a tool that claims differences where there are none.
+
+A URL that returns an image is compared as an image; one that returns a binary is
+compared as a binary. Once the bytes are in hand, everything takes the same path.
+
+`mrdiff --clipboard notes.md` compares what you just copied against a file or a URL.
+Text is taken as text; if the clipboard holds no text, a PNG or TIFF image is taken
+instead — copying a screenshot and asking "is this the same as before?" is the case
+this is for.
 
 ### In CI
 
