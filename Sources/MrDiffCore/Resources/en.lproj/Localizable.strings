@@ -22,3 +22,12 @@
 "error.bad_color"      = "--color takes always, never or auto";
 "error.mixed_kinds"    = "cannot compare text with a non-text file";
 "error.image_only_flag" = "--tolerance and --ignore-alpha apply to images, not text";
+
+/* バイナリ。人が読む出力だけ。 */
+"binary.identical"     = "Binary files are identical";
+"binary.differ"        = "Binary files differ — %d regions, first at %@";
+"binary.differ.one"    = "Binary files differ — 1 region at %@";
+"binary.bytes"         = "%d of %d bytes differ";
+"binary.size"          = "Sizes differ — %d vs %d bytes (%d extra)";
+"binary.common_only"   = "compared the first %d bytes they have in common";
+"binary.common_same"   = "the first %d bytes they have in common are identical";

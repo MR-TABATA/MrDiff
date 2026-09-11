@@ -32,6 +32,20 @@ public enum ImageLoadError: Error, CustomStringConvertible {
     }
 }
 
+/// 中身が画像として読めるか。**拡張子は見ない。**
+///
+/// `detectKind` は「テキストか、そうでないか」までしか答えない（NUL と UTF-8 で決まる）。
+/// **そうでないもの**が画像なのかバイナリなのかは、実際に読めるかどうかで決める ――
+/// ImageIO に聞けば、`.bin` と名付けられた PNG も、`.png` と名付けられたゴミも取り違えない。
+///
+/// 画素までは起こさない（種類を決めるのに 4K 画像を展開する必要は無い）。
+public func looksLikeImage(_ data: Data) -> Bool {
+    guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return false }
+    guard CGImageSourceGetCount(src) > 0 else { return false }
+    // 型が決まらないものは読めない（ImageIO は「たぶん」で source を作ることがある）。
+    return CGImageSourceGetType(src) != nil
+}
+
 public func loadImage(at url: URL) throws -> DecodedImage {
     guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else {
         throw ImageLoadError.cannotOpen(url)

@@ -94,6 +94,50 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
 // **片方だけテキストなら、比べない。**行と画素は突き合わせられない。
 if detectKind(dataA) != detectKind(dataB) { die(t("error.mixed_kinds")) }
 
+// テキストでないものは、**画像として読めるかどうか**でさらに分ける。拡張子は見ない。
+// 片方だけ画像なら比べない（画素と生バイトも突き合わせられない）。
+let imageA = looksLikeImage(dataA), imageB = looksLikeImage(dataB)
+if imageA != imageB { die(t("error.mixed_kinds")) }
+
+if !imageA {
+    if tolerance > 0 || ignoreAlpha { die(t("error.image_only_flag")) }
+    let d = BinaryDiff.compare(dataA, dataB)
+
+    if wantsJSON {
+        if d.isIdentical {
+            print(#"{"result":"identical"}"#)
+        } else {
+            let first = d.first.map { "\($0.offset)" } ?? "null"
+            print("{\"result\":\"differ\",\"regions\":\(d.regions.count),"
+                  + "\"differing_bytes\":\(d.differingBytes),\"first_offset\":\(first),"
+                  + "\"size_a\":\(d.sizeA),\"size_b\":\(d.sizeB)}")
+        }
+    } else if d.isIdentical {
+        print(t("binary.identical"))
+    } else {
+        // **長さの違いは、箇所の数と別に言う。** 1 バイト挿入で以降が全部ずれた結果を
+        // 「全部違う」とだけ出すのは、正しいが役に立たない。
+        if d.sizeA != d.sizeB {
+            print(t("binary.size", d.sizeA, d.sizeB, d.extraBytes))
+        }
+        if let first = d.first {
+            let where_ = BinaryDiff.hex(first.offset)
+            print(d.regions.count == 1
+                  ? t("binary.differ.one", where_)
+                  : t("binary.differ", d.regions.count, where_))
+            print("  " + t("binary.bytes", d.differingBytes, min(d.sizeA, d.sizeB)))
+        }
+        // **どこまで比べたかを言う。**余りは比べていない。
+        if d.sizeA != d.sizeB {
+            // 共通部分に違いが無いなら、そう言う。**言わないと「長さしか見ていない」のか
+            // 「中身も違う」のかが読めない。**
+            if d.regions.isEmpty { print("  " + t("binary.common_same", min(d.sizeA, d.sizeB))) }
+            else { print("  " + t("binary.common_only", min(d.sizeA, d.sizeB))) }
+        }
+    }
+    exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+}
+
 let result: ImageComparison
 do {
     result = try compareImages(a, b, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
