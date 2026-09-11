@@ -43,6 +43,7 @@ a binary, or a 10 GB log where you only care whether anything moved.
 | **Binaries** | do they differ, how many regions, offset of the first |
 | **Two URLs** | fetch both, diff the source they return |
 | Clipboard | compare what you just copied against a file or a URL |
+| **A site vs its source** | check whether a deployed site matches the git-tracked folder it was built from |
 
 ## Install
 
@@ -58,6 +59,7 @@ mrdiff a.png b.png                    # image — summary, not a picture
 mrdiff a.bin b.bin                    # binary — summary
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # clipboard vs file
+mrdiff --site https://example.com ./site   # is the live site in sync with ./site?
 
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --format json a.bin b.bin      # machine readable
@@ -113,6 +115,34 @@ compared as a binary. Once the bytes are in hand, everything takes the same path
 Text is taken as text; if the clipboard holds no text, a PNG or TIFF image is taken
 instead — copying a screenshot and asking "is this the same as before?" is the case
 this is for.
+
+### A deployed site vs the folder it came from
+
+```
+mrdiff --site https://example.com ./site
+```
+
+Walks the **git-tracked** files under `./site`, fetches each one from the site, and
+tells you what does not match:
+
+```
+changed   index.html
+not on site   pricing.html
+In sync — 12 files match the site
+```
+
+`./site` must be inside a git work tree — `git ls-files` is what defines "the files
+that are meant to be there", so anything git ignores (build junk, `.DS_Store`, a file
+edited straight on the server) is not counted as yours. That is deliberate: it means
+this only works on a site you control, and it is what makes "did I forget to deploy
+this?" answerable.
+
+**What it cannot tell you: files on the site that are *not* in git** — a left-over
+`customers.xlsx`, an old page you deleted locally. HTTP has no directory listing, so
+there is no way to enumerate what the site actually holds; the command says so every
+time rather than implying the site is clean.
+
+`--exit-code` makes it a deploy check for CI.
 
 ### In CI
 

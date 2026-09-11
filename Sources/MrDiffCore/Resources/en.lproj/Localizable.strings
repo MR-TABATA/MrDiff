@@ -41,3 +41,16 @@
 "error.clipboard_needs_one" = "--clipboard takes one file or URL to compare against";
 "note.fetched"         = "fetched %@ and %@";
 "note.redirected"      = "%@ redirected to %@";
+
+/* サイト diff（git 管理下の公開フォルダ × 公開中のサイト）。 */
+"site.changed"         = "changed   %@";
+"site.missing"         = "not on site   %@";
+"site.error"           = "could not check   %@";
+"site.in_sync"         = "In sync — %d files match the site";
+"site.summary"         = "%d changed, %d not deployed, %d could not be checked";
+"site.cannot_find_extras" = "note: files on the site that are not in git cannot be found this way (HTTP has no directory listing)";
+"error.site_usage"     = "usage: mrdiff --site <https://base> <dir>  (dir must be inside a git work tree)";
+"error.site_empty"     = "no git-tracked files under %@";
+"error.not_git"        = "%@ is not inside a git repository";
+"error.git_failed"     = "git failed: %@";
+"error.git_missing"    = "git is not installed";

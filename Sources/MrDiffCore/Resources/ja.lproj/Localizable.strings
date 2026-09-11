@@ -41,3 +41,16 @@
 "error.clipboard_needs_one" = "--clipboard は、比べる相手のファイルか URL を 1 つ取ります";
 "note.fetched"         = "%@ と %@ を取得しました";
 "note.redirected"      = "%@ は %@ へ飛ばされました";
+
+/* サイト diff（git 管理下の公開フォルダ × 公開中のサイト）。 */
+"site.changed"         = "違う   %@";
+"site.missing"         = "サイトに無い   %@";
+"site.error"           = "確認できず   %@";
+"site.in_sync"         = "同期しています ── %d 個がサイトと一致";
+"site.summary"         = "違う %d／未デプロイ %d／確認できず %d";
+"site.cannot_find_extras" = "注意: サイトにあって git に無いファイルは、この方法では見つけられません（HTTP にディレクトリ一覧が無いため）";
+"error.site_usage"     = "使い方: mrdiff --site <https://base> <dir>  （dir は git の作業ツリーの中）";
+"error.site_empty"     = "%@ の下に git 管理下のファイルがありません";
+"error.not_git"        = "%@ は git リポジトリの中ではありません";
+"error.git_failed"     = "git が失敗しました: %@";
+"error.git_missing"    = "git が入っていません";

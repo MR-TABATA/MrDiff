@@ -48,6 +48,67 @@ let useColor: Bool = {
     return isatty(FileHandle.standardOutput.fileDescriptor) == 1
 }()
 
+// **サイト diff。** git 管理下の公開フォルダと、公開中のサイトを突き合わせる。
+//   mrdiff --site https://example.com ./site
+// git が「意図」の記録。載っているものがサイトにあるべきもの。CLI は無料（GUI が有償）。
+if let siteFlagIndex = args.firstIndex(of: "--site") {
+    // --site の後ろに URL、位置引数にフォルダ。
+    let rest = Array(args[(siteFlagIndex + 1)...])
+    guard let base = rest.first(where: { $0.hasPrefix("http://") || $0.hasPrefix("https://") }),
+          let baseURL = URL(string: base) else { die(t("error.site_usage")) }
+    let dirs = files.filter { !$0.hasPrefix("http") }
+    guard dirs.count == 1 else { die(t("error.site_usage")) }
+    let dir = URL(fileURLWithPath: dirs[0], isDirectory: true)
+
+    let tracked: [String]
+    do { tracked = try GitFiles.tracked(in: dir) }
+    catch { die("\(error)") }
+    if tracked.isEmpty { die(t("error.site_empty", dir.path)) }
+
+    let entries = SiteMap.entries(base: baseURL, relativePaths: tracked)
+    let result = SiteDiff.compare(
+        entries: entries,
+        fetch: { url in
+            do {
+                let data = try fetch(url, timeout: 30)
+                return .got(data)
+            } catch let InputError.http(code, _) where code == 404 {
+                return .absent
+            } catch { return .failed("\(error)") }
+        },
+        local: { rel in try? Data(contentsOf: dir.appendingPathComponent(rel)) })
+
+    if wantsJSON {
+        func esc(_ s: String) -> String { s.replacingOccurrences(of: "\"", with: "\\\"") }
+        let items = result.rows.map { r -> String in
+            let st: String
+            switch r.status {
+            case .identical: st = "identical"
+            case .changed:   st = "changed"
+            case .missing:   st = "missing"
+            case .error:     st = "error"
+            }
+            return "{\"path\":\"\(esc(r.entry.localPath))\",\"status\":\"\(st)\"}"
+        }
+        print("{\"in_sync\":\(result.allInSync),\"files\":\(entries.count),"
+              + "\"changed\":\(result.changed.count),\"missing\":\(result.missing.count),"
+              + "\"errors\":\(result.errored.count),\"rows\":[\(items.joined(separator: ","))]}")
+    } else {
+        for r in result.changed { print(t("site.changed", r.entry.localPath)) }
+        for r in result.missing { print(t("site.missing", r.entry.localPath)) }
+        for r in result.errored { print(t("site.error", r.entry.localPath)) }
+        if result.allInSync {
+            print(t("site.in_sync", entries.count))
+        } else {
+            print(t("site.summary", result.changed.count, result.missing.count, result.errored.count))
+        }
+        // **置き忘れは見つけられないと、必ず言う。** URL に一覧が無いので、
+        // 「サイトにあって git に無いもの」は原理的に出せない。
+        print("  " + t("site.cannot_find_extras"))
+    }
+    exit(result.allInSync ? 0 : (wantsExitCode ? 1 : 0))
+}
+
 // **入れ物は 3 種類**（ファイル・URL・クリップボード）。取ってきた後は同じ道を通る。
 let useClipboard = args.contains("--clipboard")
 let inputs: [Input]
