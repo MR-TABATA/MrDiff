@@ -52,7 +52,7 @@ a different output for each.
 ## Install
 
 ```bash
-brew install mr-tabata/tap/mrdiff     # TODO: tap not published yet
+brew install mr-tabata/tap/mrdiff
 ```
 
 macOS only. Image decoding uses the system's ImageIO, which is what ties it to
