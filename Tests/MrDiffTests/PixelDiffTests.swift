@@ -67,6 +67,28 @@ final class PixelDiffTests: XCTestCase {
                                      bytesPerPixel: 4, ignoreAlpha: true), .identical)
     }
 
+    /// 絵で見せるための画素ごとの印は、数を出す判定と同じ規則で付く。
+    func test_画素ごとの印は判定と同じ規則() {
+        let a = buf([black, white, white, black])
+        let b = buf([[0, 0, 3, 255], [255, 250, 255, 255], white, [0, 0, 0, 100]])
+        XCTAssertEqual(differingPixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2, bytesPerPixel: 4), [1, 1, 0, 1])
+        XCTAssertEqual(differingPixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2, bytesPerPixel: 4, tolerance: 3), [0, 1, 0, 1])
+        XCTAssertEqual(differingPixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2, bytesPerPixel: 4, ignoreAlpha: true), [1, 1, 0, 0])
+        XCTAssertNil(differingPixels(a: a, sizeA: size2x2, b: b, sizeB: Size(width: 4, height: 1), bytesPerPixel: 4))
+        // 数を出す判定と食い違わない
+        guard case .differ(let d) = comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2, bytesPerPixel: 4) else { return XCTFail() }
+        XCTAssertEqual(d.changed, 3)
+    }
+
+    /// 全体の色の差は B − A の平均。アルファは数えない。
+    func test_全体の色の差() {
+        let a = buf([black, white, white, black])
+        let b = buf([[10, 0, 0, 255], [255, 235, 255, 255], white, [0, 0, 0, 0]])
+        let t = toneDifference(a: a, sizeA: size2x2, b: b, sizeB: size2x2, bytesPerPixel: 4)
+        XCTAssertEqual(t?.mean, [2.5, -5.0, 0.0])
+        XCTAssertNil(toneDifference(a: a, sizeA: size2x2, b: b, sizeB: Size(width: 4, height: 1), bytesPerPixel: 4))
+    }
+
     func test_最初の差分は左上から走査した順() {
         let a = buf([black, black, black, black])
         let b = buf([black, black, black, white])   // 右下だけ違う

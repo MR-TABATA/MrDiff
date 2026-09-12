@@ -44,8 +44,10 @@ public enum JSONOutput {
     }
 
     public static func image(_ r: ImageComparison, tolerance: Int, ignoreAlpha: Bool,
-                             redirects: [Redirect] = []) -> [String: Any] {
+                             tone: ToneDifference? = nil, redirects: [Redirect] = []) -> [String: Any] {
         var o: [String: Any] = ["kind": "image"]
+        // 全体の色の差（B − A の平均、チャンネルごと）。寸法が違えば無い。
+        if let tone { o["tone_shift"] = tone.mean.map { NSDecimalNumber(string: String(format: "%.1f", $0)) } }
         switch r {
         case .identical:
             o["result"] = "identical"

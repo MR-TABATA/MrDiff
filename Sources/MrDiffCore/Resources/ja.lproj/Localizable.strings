@@ -7,6 +7,8 @@
 "images.differ.tiny"   = "%d / %d 画素が違います";
 "images.first"         = "最初の違いは (%d, %d)";
 "images.gap"           = "チャンネルの差の最大は %d ── --tolerance=%d なら同じになります";
+"images.tone.brighter" = "B は全体に約 %d 明るい（R G B: %@）";
+"images.tone.darker"   = "B は全体に約 %d 暗い（R G B: %@）";
 
 /* 緩めて比べたときは、そう言う。「同じ」とだけ言うと嘘になる。 */
 "note.compared_with"   = "%@ で比較";

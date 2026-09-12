@@ -128,3 +128,58 @@ public func comparePixels(
     guard let firstPoint = first else { return .identical }
     return .differ(PixelDiff(changed: changed, total: total, first: firstPoint, maxGap: maxGap))
 }
+
+/// 画素ごとの「違うか」。**判定は `comparePixels` と同じ規則**（tolerance / ignoreAlpha）。
+///
+/// 1 画素 1 バイト（0 = 同じ、1 = 違う）、行は `width` 個。寸法が違えば nil。
+/// GUI が「どこが」を絵で見せるための材料で、答えの中身は数と同じ ── **見せる側が
+/// 自分で比べ直さない**ために、判定側がここで出す。
+public func differingPixels(
+    a: [UInt8], sizeA: Size,
+    b: [UInt8], sizeB: Size,
+    bytesPerPixel: Int,
+    tolerance: Int = 0,
+    ignoreAlpha: Bool = false
+) -> [UInt8]? {
+    guard sizeA == sizeB else { return nil }
+    let total = sizeA.width * sizeA.height
+    var mask = [UInt8](repeating: 0, count: total)
+    let channels = (ignoreAlpha && bytesPerPixel == 4) ? 3 : bytesPerPixel
+    for p in 0..<total {
+        let i = p * bytesPerPixel
+        for c in 0..<channels where abs(Int(a[i + c]) - Int(b[i + c])) > tolerance {
+            mask[p] = 1
+            break
+        }
+    }
+    return mask
+}
+
+/// 全体の色の差。**B − A のチャンネルごとの平均（符号付き）。**
+///
+/// 「44% が違う」と出た写真が、実は全画素が同じ向きに +20 明るかった ── 圧縮のノイズでも
+/// 細工でもなく、露出かトーンカーブの違い。数だけでは区別がつかないので、平均の向きを
+/// 言う。寸法が違えば nil。RGBA なら最初の 3 本（アルファは色ではない）。
+public struct ToneDifference: Equatable, Sendable {
+    /// チャンネルごとの平均（B − A）。
+    public let mean: [Double]
+    /// 3 本の平均。正なら B のほうが明るい。
+    public var overall: Double { mean.isEmpty ? 0 : mean.reduce(0, +) / Double(mean.count) }
+}
+
+public func toneDifference(
+    a: [UInt8], sizeA: Size,
+    b: [UInt8], sizeB: Size,
+    bytesPerPixel: Int
+) -> ToneDifference? {
+    guard sizeA == sizeB else { return nil }
+    let total = sizeA.width * sizeA.height
+    guard total > 0 else { return nil }
+    let channels = min(bytesPerPixel, 3)
+    var sums = [Int](repeating: 0, count: channels)
+    for p in 0..<total {
+        let i = p * bytesPerPixel
+        for c in 0..<channels { sums[c] += Int(b[i + c]) - Int(a[i + c]) }
+    }
+    return ToneDifference(mean: sums.map { Double($0) / Double(total) })
+}

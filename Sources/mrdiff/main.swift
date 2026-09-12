@@ -254,6 +254,8 @@ if !imageA {
 }
 
 let result: ImageComparison
+/// 全体の色の差（B − A の平均）。違ったときだけ人向けに添える。
+var tone: ToneDifference?
 do {
     let ua = try fileURL(for: inputs[0], data: dataA, suffix: "a")
     let ub = try fileURL(for: inputs[1], data: dataB, suffix: "b")
@@ -264,7 +266,10 @@ do {
             try? FileManager.default.removeItem(at: url)
         }
     }
-    result = try compareImages(ua, ub, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+    let ia = try loadImage(at: ua), ib = try loadImage(at: ub)
+    result = comparePixels(a: ia.pixels, sizeA: ia.size, b: ib.pixels, sizeB: ib.size,
+                           bytesPerPixel: ia.bytesPerPixel, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+    tone = toneDifference(a: ia.pixels, sizeA: ia.size, b: ib.pixels, sizeB: ib.size, bytesPerPixel: ia.bytesPerPixel)
 } catch {
     die("\(error)")
 }
@@ -280,7 +285,7 @@ let note = relaxations.isEmpty
 
 if wantsJSON {
     print(JSONOutput.encode(JSONOutput.image(result, tolerance: tolerance, ignoreAlpha: ignoreAlpha,
-                                             redirects: redirectsJSON)))
+                                             tone: tone, redirects: redirectsJSON)))
     if case .identical = result { exit(0) }
     exit(wantsExitCode ? 1 : 0)
 }
@@ -307,6 +312,12 @@ case .differ(let d):
     print(t("images.first", d.first.x, d.first.y))
     printRedirects()
     if let note { print("  " + note) }
+    // **全体が同じ向きにずれているなら、そう言う。**「44% が違う」の写真が、実は全画素が
+    // +20 明るいだけだった ── 数だけでは圧縮のノイズとも細工とも区別がつかない。
+    if let tone, abs(tone.overall) >= 2 {
+        let ch = tone.mean.map { String(format: "%+.0f", $0) }.joined(separator: " ")
+        print("  " + t(tone.overall > 0 ? "images.tone.brighter" : "images.tone.darker", abs(Int(tone.overall.rounded())), ch))
+    }
     // **既定は変えない。代わりに緩め方を教える。**「見た目は同じなのに違う」と出た人が、
     // どこまで緩めれば同じになるかをここで知る。緩めた上でまだ違うときも、その先の値を言う。
     print("  " + t("images.gap", d.maxGap, d.maxGap))

@@ -7,6 +7,8 @@
 "images.differ.tiny"   = "Images differ — %d of %d pixels";
 "images.first"         = "First difference at (%d, %d)";
 "images.gap"           = "largest per-channel gap: %d — --tolerance=%d would call these the same";
+"images.tone.brighter" = "B is brighter overall by about %d per channel (R G B: %@)";
+"images.tone.darker"   = "B is darker overall by about %d per channel (R G B: %@)";
 
 /* 緩めて比べたときは、そう言う。「同じ」とだけ言うと嘘になる。 */
 "note.compared_with"   = "compared with %@";

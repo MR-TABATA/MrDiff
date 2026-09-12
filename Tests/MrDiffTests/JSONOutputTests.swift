@@ -54,6 +54,13 @@ final class JSONOutputTests: XCTestCase {
         XCTAssertEqual(s, #"{"a":{"height":30,"width":40},"b":{"height":30,"width":41},"kind":"image","result":"size_mismatch"}"#)
     }
 
+    /// 全体の色の差は、あるときだけ `tone_shift`（B − A のチャンネルごとの平均、小数 1 桁）。
+    func testImageToneShift() {
+        let tone = ToneDifference(mean: [21.26, 18.57, 17.71])
+        let s = JSONOutput.encode(JSONOutput.image(.identical, tolerance: 0, ignoreAlpha: false, tone: tone))
+        XCTAssertEqual(s, #"{"kind":"image","result":"identical","tone_shift":[21.3,18.6,17.7]}"#)
+    }
+
     /// **緩めて比べたら JSON にもそう書く。**既定のときはキー自体を出さない。
     func testImageRelaxationsAppearOnlyWhenUsed() {
         let strict = JSONOutput.image(.identical, tolerance: 0, ignoreAlpha: false)
