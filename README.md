@@ -1,3 +1,5 @@
+<p align="center"><img src="art/icon.png" width="128" alt=""></p>
+
 # MrDiff
 
 **`diff` tells you binary files differ. It does not tell you how much, or where.**

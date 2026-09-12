@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
+  <!-- MrDiff アイコン（大サイズ用・.icns / README / social preview のマスター）。
+       兄弟アプリ MRDown / MrEditor / MrShip と同じ design language:
+         角丸 / 上部に gloss / 中央に線画グリフ 1 つ（stroke, round cap+join）。
+       グリフは丸 2 つの重なり ＝ **共通と違い**。重なった部分が共通、残りが違い。diff が答える 2 つ。
+       斜めにずらすのは、横並びだと丸 2 つ（Mastercard）に寄るため。
+       色は coral。兄弟 3 本（violet / teal / indigo）が寒色なので、Dock で並んだとき暖色 1 本で見分けがつく。
+
+       **カンバスいっぱいに描かないこと。** macOS のアプリアイコンは 1024px のうち
+       角丸本体が 824px（= 80.47%）で、周囲に余白と落ち影を持つ。全面に描くと
+       Dock で他のアプリより一回り大きく見える。 -->
+  <defs>
+    <linearGradient id="coral" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9A6B"/>
+      <stop offset="1" stop-color="#B8321E"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="50%" cy="0%" r="80%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".14"/>
+      <stop offset="55%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.6" stdDeviation="1.6" flood-color="#0B1020" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+
+  <!-- 本体 824/1024 = 80.47%。左上 (9.77, 9.77)。角丸は本体の 22.5%（Apple の比率）。 -->
+  <g filter="url(#shadow)">
+    <g transform="translate(9.765 9.765) scale(0.8047)">
+      <rect width="100" height="100" rx="23" fill="url(#coral)"/>
+      <rect width="100" height="100" rx="23" fill="url(#gloss)"/>
+      <g fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="42" cy="42" r="18"/>
+        <circle cx="58" cy="58" r="18"/>
+      </g>
+    </g>
+  </g>
+</svg>
