@@ -12,6 +12,7 @@ First difference at (412, 88)
 
 $ mrdiff firmware-v1.bin firmware-v2.bin
 Binary files differ — 47 regions, first at 0x1A3F
+  158 of 2,000,000 bytes differ
 
 $ mrdiff config.json config-new.json
 5 changed, 1 added, 0 removed
@@ -20,6 +21,7 @@ $ mrdiff --ssh ./site deploy@host:/var/www
 changed   config/app.yml
 only local (not deployed)   pages/new.html
 only on remote (left over?)   backups/customers.sql
+1 changed, 1 only local, 1 only on remote
 ```
 
 The answer has the same shape whatever you hand it, and it arrives in the
@@ -81,7 +83,7 @@ mrdiff --color=never a.log b.log      # no escape codes (auto-off when piped)
 
 ```
 $ mrdiff a.log b.log
-2 changed, 1 added, 0 removed
+2 changed, 0 added, 0 removed
     1     1   09:00:01 INFO  starting worker pool size=8
     2     2   09:00:02 INFO  connected to db host=primary
     3       - 09:00:03 INFO  GET /health status=200 latency=42ms
@@ -105,13 +107,14 @@ Markdown and JSON are compared this way too — line by line, as text. Reformatt
 counts as a change; "the same after `**bold**` is removed" or "the same with the
 keys in a different order" is outside what this version says.
 
-`--tolerance` and `--ignore-alpha` loosen what counts as different. When either
-is on, the output says so — "identical" on its own always means byte-identical.
+### Images
 
 The default is exact: one unit of difference in one channel is a difference.
 That is deliberate — "identical" with nothing after it always means
-byte-identical. When images differ, the output also says how far apart the values
-got, and what tolerance would close the gap:
+byte-identical. `--tolerance` and `--ignore-alpha` loosen what counts as
+different, and when either is on the output says so. When images differ, the
+output also says how far apart the values got, and what tolerance would close
+the gap:
 
 ```
 Images differ — 1,051 of 1,200 pixels (87.6%)
@@ -151,7 +154,8 @@ tells you what does not match:
 ```
 changed   index.html
 not on site   pricing.html
-In sync — 12 files match the site
+1 changed, 1 not deployed, 0 could not be checked
+  note: files on the site that are not in git cannot be found this way (HTTP has no directory listing)
 ```
 
 `./site` must be inside a git work tree — `git ls-files` is what defines "the files
@@ -186,6 +190,7 @@ thing a deploy check usually cannot:
 changed   config/app.yml
 only local (not deployed)   pages/new.html
 only on remote (left over?)   backups/customers.sql     ← not in your local copy
+1 changed, 1 only local, 1 only on remote
 ```
 
 That last line is the point for anyone maintaining a server: a file sitting in the
@@ -209,7 +214,7 @@ and its shape is fixed from v0.1.0 on:
 
 ```
 $ mrdiff --json a.png b.png
-{"changed":3,"first":{"x":4,"y":5},"fraction":0.03,"kind":"image","result":"differ","total":100}
+{"changed":3,"first":{"x":4,"y":5},"fraction":0.03,"kind":"image","max_gap":7,"result":"differ","total":100}
 ```
 
 Exit codes: `0` it ran (differ or not), `1` they differ and `--exit-code` was

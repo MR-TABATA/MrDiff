@@ -79,7 +79,7 @@
       </div>
       <div class="attrs">
         <span>1 つのコマンドで、どの種類でも</span>
-        <span>macOS・バイナリ 1 つ・依存なし</span>
+        <span>macOS・<code>brew install</code> 1 回・依存なし</span>
         <span>MIT ライセンス — 無料</span>
       </div>
     </div>
@@ -96,11 +96,13 @@
 
 <span class="p">$</span> <span class="cmd">mrdiff firmware-v1.bin firmware-v2.bin</span>
 <span class="out">Binary files differ — 47 regions, first at 0x1A3F</span>
+<span class="out">  158 of 2,000,000 bytes differ</span>
 
 <span class="p">$</span> <span class="cmd">mrdiff --ssh ./site deploy@host:/var/www</span>
 <span class="out">changed   config/app.yml</span>
 <span class="out">only local (not deployed)   pages/new.html</span>
-<span class="out">only on remote (left over?)   backups/customers.sql</span></pre>
+<span class="out">only on remote (left over?)   backups/customers.sql</span>
+<span class="out">1 changed, 1 only local, 1 only on remote</span></pre>
       </div>
       <p class="answer-caption">画像も、バイナリも、サーバも、同じ形の答え。いま開いているターミナルの中に。</p>
     </div>
@@ -126,7 +128,7 @@
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
           <h3>画像</h3>
-          <p>違うか、何画素が、最初はどこか。画素を数えるので、1 画素の違いが「0.0%」に丸まることはない。<code>--tolerance=N</code> で再エンコード程度の差を同じとみなせる。緩めたときは出力にそう書く — 何も付かない「同じ」は、必ずバイト単位で同じという意味。</p>
+          <p>違うか、何画素が、最初はどこか。画素を数えるので、1 画素の違いが「0.0%」に丸まることはない。<code>--tolerance=N</code> で小さな値のずれを同じとみなせる。緩めたときは出力にそう書く — 何も付かない「同じ」は、必ずバイト単位で同じという意味。</p>
 <pre class="ex"><span class="p">$</span> mrdiff --tolerance=2 a.png b.jpg
 <span class="out">Images differ — 1,560 of 390,000 pixels (0.4%)</span>
 <span class="out">  compared with ±2 per channel</span>
@@ -155,8 +157,10 @@
           <h3>公開中のサイトと、元のフォルダ</h3>
           <p><code>--site</code> はフォルダの <strong>git 管理下</strong>のファイルを 1 つずつサイトから取ってきて、合わないものを言う: 違う、またはサイトに無い。「置いてあるべきファイル」を決めるのは <code>git ls-files</code> なので、ビルドの中間物や <code>.DS_Store</code> は数えない。「これ、デプロイし忘れてない？」が CI のチェックになる。</p>
 <pre class="ex"><span class="p">$</span> mrdiff --site https://example.com ./site
-<span class="out">changed       index.html</span>
-<span class="out">not on site   pricing.html</span></pre>
+<span class="out">changed   index.html</span>
+<span class="out">not on site   pricing.html</span>
+<span class="out">1 changed, 1 not deployed, 0 could not be checked</span>
+<span class="out">  note: files on the site that are not in git cannot be found this way (HTTP has no directory listing)</span></pre>
         </div>
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
@@ -222,7 +226,7 @@
     <div class="wrap">
       <div class="section-title">
         <h2>インストール</h2>
-        <p>バイナリ 1 つ。ほかに入れるものは無い。</p>
+        <p><code>brew install</code> 1 回。ほかに設定するものは無い。</p>
       </div>
       <div class="install">
 <pre><span class="p">$</span> <span class="cmd">brew install mr-tabata/tap/mrdiff</span>

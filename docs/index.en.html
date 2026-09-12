@@ -79,7 +79,7 @@
       </div>
       <div class="attrs">
         <span>One command, every kind of file</span>
-        <span>macOS · single binary · no dependencies</span>
+        <span>macOS · one <code>brew install</code> · no dependencies</span>
         <span>MIT licensed — free</span>
       </div>
     </div>
@@ -96,11 +96,13 @@
 
 <span class="p">$</span> <span class="cmd">mrdiff firmware-v1.bin firmware-v2.bin</span>
 <span class="out">Binary files differ — 47 regions, first at 0x1A3F</span>
+<span class="out">  158 of 2,000,000 bytes differ</span>
 
 <span class="p">$</span> <span class="cmd">mrdiff --ssh ./site deploy@host:/var/www</span>
 <span class="out">changed   config/app.yml</span>
 <span class="out">only local (not deployed)   pages/new.html</span>
-<span class="out">only on remote (left over?)   backups/customers.sql</span></pre>
+<span class="out">only on remote (left over?)   backups/customers.sql</span>
+<span class="out">1 changed, 1 only local, 1 only on remote</span></pre>
       </div>
       <p class="answer-caption">An image, a binary, a server — the answer has the same shape. In the terminal you are already in.</p>
     </div>
@@ -126,7 +128,7 @@
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
           <h3>Images</h3>
-          <p>Do they differ, what fraction of pixels, and where the first one is. Pixels are counted, so a one-pixel change is never rounded to “0.0%”. <code>--tolerance=N</code> lets a re-encode count as the same; when it is on, the output says so — “identical” on its own always means byte-identical.</p>
+          <p>Do they differ, what fraction of pixels, and where the first one is. Pixels are counted, so a one-pixel change is never rounded to “0.0%”. <code>--tolerance=N</code> lets small value drift count as the same; when it is on, the output says so — “identical” on its own always means byte-identical.</p>
 <pre class="ex"><span class="p">$</span> mrdiff --tolerance=2 a.png b.jpg
 <span class="out">Images differ — 1,560 of 390,000 pixels (0.4%)</span>
 <span class="out">  compared with ±2 per channel</span>
@@ -155,8 +157,10 @@
           <h3>A deployed site vs the folder it came from</h3>
           <p><code>--site</code> walks the <strong>git-tracked</strong> files in a folder, fetches each one from the live site, and tells you what does not match: changed, or not on the site at all. <code>git ls-files</code> is what defines “the files that are meant to be there”, so build junk and <code>.DS_Store</code> are not yours. “Did I forget to deploy this?” becomes a CI check.</p>
 <pre class="ex"><span class="p">$</span> mrdiff --site https://example.com ./site
-<span class="out">changed       index.html</span>
-<span class="out">not on site   pricing.html</span></pre>
+<span class="out">changed   index.html</span>
+<span class="out">not on site   pricing.html</span>
+<span class="out">1 changed, 1 not deployed, 0 could not be checked</span>
+<span class="out">  note: files on the site that are not in git cannot be found this way (HTTP has no directory listing)</span></pre>
         </div>
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
@@ -222,7 +226,7 @@
     <div class="wrap">
       <div class="section-title">
         <h2>Install</h2>
-        <p>One binary. Nothing else to install.</p>
+        <p>One <code>brew install</code>. Nothing else to set up.</p>
       </div>
       <div class="install">
 <pre><span class="p">$</span> <span class="cmd">brew install mr-tabata/tap/mrdiff</span>

@@ -6,9 +6,11 @@ import PackageDescription
 //   MrDiffCore (library) ── 判定と比較。表示は持たない。
 //        └── mrdiff  (executable) … 無料の CLI。MIT。
 //
-// **MrEditorCore にはまだ依存しない。** 巨大テキストの機構が要るのは
-// テキスト diff を実装するときで、それまで引くと AppKit ごと持ち込むことになる。
-// CLI を Linux（CI）でも動かす目があるので、要るまで足さない。
+// **MrEditorCore には依存しない。** テキスト diff は LineDiff / CharDiff を
+// 写して持っている（共有しない・同期しない）。引くと AppKit ごと持ち込むことになる。
+//
+// macOS 専用。ImageIO / CoreGraphics で画像を読む時点で Apple のプラットフォームに
+// 縛られているので、Linux で動かす目は捨てた（platforms も macOS だけ）。
 let package = Package(
     name: "MrDiff",
     // 既定は英語。日本語は MRDIFF_LANG=ja で明示的に選んだときだけ（Localization.swift）
