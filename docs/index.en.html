@@ -92,6 +92,7 @@
 <pre><span class="p">$</span> <span class="cmd">mrdiff before.png after.png</span>
 <span class="out">Images differ — 12,481 of 390,000 pixels (3.2%)</span>
 <span class="out">First difference at (412, 88)</span>
+<span class="out">  largest per-channel gap: 41 — --tolerance=41 would call these the same</span>
 
 <span class="p">$</span> <span class="cmd">mrdiff firmware-v1.bin firmware-v2.bin</span>
 <span class="out">Binary files differ — 47 regions, first at 0x1A3F</span>
@@ -128,7 +129,8 @@
           <p>Do they differ, what fraction of pixels, and where the first one is. Pixels are counted, so a one-pixel change is never rounded to “0.0%”. <code>--tolerance=N</code> lets a re-encode count as the same; when it is on, the output says so — “identical” on its own always means byte-identical.</p>
 <pre class="ex"><span class="p">$</span> mrdiff --tolerance=2 a.png b.jpg
 <span class="out">Images differ — 1,560 of 390,000 pixels (0.4%)</span>
-<span class="out">  compared with ±2 per channel</span></pre>
+<span class="out">  compared with ±2 per channel</span>
+<span class="out">  largest per-channel gap: 5 — --tolerance=5 would call these the same</span></pre>
         </div>
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>

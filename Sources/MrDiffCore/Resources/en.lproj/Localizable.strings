@@ -1,4 +1,4 @@
-/* 人が読む出力。機械向け（--format json）はここを通さない。 */
+/* 人が読む出力。機械向け（--json）はここを通さない。 */
 
 "text.identical"       = "No differences";
 "text.summary"         = "%d changed, %d added, %d removed";

@@ -8,6 +8,7 @@
 $ mrdiff before.png after.png
 Images differ — 12,481 of 390,000 pixels (3.2%)
 First difference at (412, 88)
+  largest per-channel gap: 41 — --tolerance=41 would call these the same
 
 $ mrdiff firmware-v1.bin firmware-v2.bin
 Binary files differ — 47 regions, first at 0x1A3F
