@@ -67,6 +67,9 @@ a.brand:hover { text-decoration: none; opacity: 0.85; }
 }
 .hero .logo { width: 96px; height: 96px; border-radius: 22px; margin-bottom: 28px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
 .hero h1 { font-size: 52px; line-height: 1.15; color: #fff; letter-spacing: -1px; margin-bottom: 18px; }
+/* 日本語は 1 行あたりの字数が少ないので、3 行に割り、ひと回り小さく。インラインで書くと下の
+   モバイル用の指定に勝ってしまうので、ここに置く。 */
+html[lang="ja"] .hero h1 { font-size: 44px; letter-spacing: -0.5px; }
 .hero h1 .accent { color: var(--accent); }
 .hero .lead { font-size: 19px; color: var(--text-dim); max-width: 620px; margin: 0 auto 36px; }
 
@@ -194,6 +197,7 @@ footer a { color: var(--text-dim); }
 
 @media (max-width: 760px) {
   .hero h1 { font-size: 38px; }
+  html[lang="ja"] .hero h1 { font-size: 32px; }
   .features, .features.primary, .secondary { grid-template-columns: 1fr; }
   .nav-links a:not(.lang-switch) { display: none; }
 
