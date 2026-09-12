@@ -2,19 +2,11 @@
 
 # MrDiff
 
-**`diff` tells you binary files differ. It does not tell you how much, or where.**
-
-```
-$ diff before.png after.png
-Binary files before.png and after.png differ
-```
-
-That is the whole answer you get. MrDiff gives you the rest of it, on the
-command line, without opening anything.
+**Images, binaries, URLs — and text, of course. One command, two answers: do they differ, and where.**
 
 ```
 $ mrdiff before.png after.png
-Images differ — 3.2% of pixels (12,481 / 390,000)
+Images differ — 12,481 of 390,000 pixels (3.2%)
 First difference at (412, 88)
 
 $ mrdiff firmware-v1.bin firmware-v2.bin
@@ -22,22 +14,27 @@ Binary files differ — 47 regions, first at 0x1A3F
 
 $ mrdiff config.json config-new.json
 5 changed, 1 added, 0 removed
+
+$ mrdiff --ssh ./site deploy@host:/var/www
+changed   config/app.yml
+only local (not deployed)   pages/new.html
+only on remote (left over?)   backups/customers.sql
 ```
 
-> **Status: text, images, binaries, URLs, the clipboard, a site-vs-git check and
-> SSH (single file and whole directory) all work.**
-> This README is still partly design. Numbers marked `TODO` are unmeasured —
-> they will be filled in from real runs, not estimates.
+The answer has the same shape whatever you hand it, and it arrives in the
+terminal you are already in. Nothing is rendered; nothing opens.
 
 ## What it does
 
 MrDiff answers two questions: **do these differ, and where?**
 
-It does not render the difference. For text there are already good tools for
-that — [delta](https://github.com/dandavison/delta) and
-[difftastic](https://github.com/Wilfred/difftastic) — and MrDiff does not try to
-replace them. What no CLI answers today is the same question about an image, or
-a binary, or a 10 GB log where you only care whether anything moved.
+It does not render the difference. For text,
+[delta](https://github.com/dandavison/delta) and
+[difftastic](https://github.com/Wilfred/difftastic) show a diff well, and MrDiff
+does not try to replace them. What MrDiff adds is the same short answer for every
+kind of input — an image, a binary, a URL, a live site, a server, a 10 GB log
+where you only care whether anything moved — without switching tools or learning
+a different output for each.
 
 | | |
 | :--- | :--- |
@@ -55,6 +52,10 @@ a binary, or a 10 GB log where you only care whether anything moved.
 brew install mr-tabata/tap/mrdiff     # TODO: tap not published yet
 ```
 
+macOS only. Image decoding uses the system's ImageIO, which is what ties it to
+the platform. Output is English by default; `MRDIFF_LANG=ja` switches the
+human-readable lines to Japanese. JSON output and exit codes never change.
+
 ## Usage
 
 ```bash
@@ -68,7 +69,7 @@ mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
 
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
-mrdiff --format json a.bin b.bin      # machine readable
+mrdiff --json a.bin b.bin             # machine readable
 
 mrdiff --tolerance=2 a.png b.jpg      # ±2 per channel counts as the same
 mrdiff --ignore-alpha a.png b.png     # compare colour only
@@ -98,6 +99,10 @@ Line numbers are two columns, left and right. A deleted line 7 and an added line
 
 Which kind of comparison runs is decided by **content, not extension**: two files
 that decode as UTF-8 and hold no NUL byte get the line diff.
+
+Markdown and JSON are compared this way too — line by line, as text. Reformatting
+counts as a change; "the same after `**bold**` is removed" or "the same with the
+keys in a different order" is outside what this version says.
 
 `--tolerance` and `--ignore-alpha` loosen what counts as different. When either
 is on, the output says so — "identical" on its own always means byte-identical.
@@ -175,6 +180,29 @@ That last line is the point for anyone maintaining a server: a file sitting in t
 web root that is not in your repo — an old export, a forgotten backup — is exactly
 what you want flagged, and over SSH the remote side can be listed, so it can be.
 
+### JSON
+
+`--json` prints one line of JSON and nothing else. It is never translated,
+and its shape is fixed from v0.1.0 on:
+
+| key | |
+| :--- | :--- |
+| `kind` | what it was compared as: `text`, `image`, `binary`, `site` (`--site`), `tree` (`--ssh`) |
+| `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
+| text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
+| image | `changed`, `total`, `fraction`, `first: {x, y}`; on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict |
+| binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
+| site / tree | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]` |
+| any | `redirected: [{from, to}]` when a URL was redirected |
+
+```
+$ mrdiff --json a.png b.png
+{"changed":3,"first":{"x":4,"y":5},"fraction":0.03,"kind":"image","result":"differ","total":100}
+```
+
+Exit codes: `0` it ran (differ or not), `1` they differ and `--exit-code` was
+given, `2` it could not run (the reason goes to stderr; nothing goes to stdout).
+
 ### In CI
 
 `--exit-code` makes it a check. Screenshot regression, firmware build
@@ -187,14 +215,14 @@ to see the difference, only to know there is one.
 
 ## Why
 
-Every diff tool is built for text. The moment the file is a PNG or a `.bin`,
-they all say the same thing — *files differ* — and stop. So you open a GUI, wait
-for it to load, look at one number, and close it again.
+Every kind of file already has a diff tool of its own. Text has `diff`, delta,
+difftastic. Images have odiff and pixelmatch. Binaries have `cmp -l` and
+radiff2. A server has `rsync -n`. Each one answers well; the cost is remembering
+which one to reach for, and reading a different output from each.
 
-That is a slow way to answer a fast question.
-
-MrDiff is the fast answer. When the fast answer is not enough and you actually
-need to *see* it, that is a different tool's job.
+MrDiff asks one question of all of them — do these differ, and where — and
+answers it in one shape. When that answer is not enough and you actually need to
+*see* the difference, that is a different tool's job.
 
 ## Speed
 
