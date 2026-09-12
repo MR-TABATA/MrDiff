@@ -26,6 +26,13 @@ fi
 
 # build の進捗は stderr へ。stdout は下の 2 行（zip のパスと sha256）だけにする ──
 # 呼ぶ側（Actions）が行番号で拾うので、ここに混ざると別の文字列を掴む（1 回やった）。
+# --version が言う版とタグが違う配布物は出さない。
+DECLARED=$(sed -n 's/^let mrdiffVersion = "\(.*\)"$/\1/p' Sources/mrdiff/Version.swift)
+if [ "$DECLARED" != "$VERSION" ]; then
+  echo "Sources/mrdiff/Version.swift は ${DECLARED}、配る版は ${VERSION}。先に Version.swift を直すこと" >&2
+  exit 1
+fi
+
 swift build -c release --arch arm64 --arch x86_64 1>&2
 PRODUCTS=".build/apple/Products/Release"
 

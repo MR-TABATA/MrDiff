@@ -12,6 +12,13 @@ import MrDiffCore
 signal(SIGPIPE, SIG_IGN)
 
 let args = Array(CommandLine.arguments.dropFirst())
+
+// `--version` は何より先に。訳さない（機械が読むことがある）。
+if args.contains("--version") || args.contains("-V") {
+    print("mrdiff \(mrdiffVersion)")
+    exit(0)
+}
+
 let wantsJSON = args.contains("--format=json") || args.contains("--json")
 let wantsExitCode = args.contains("--exit-code")
 let ignoreAlpha = args.contains("--ignore-alpha")

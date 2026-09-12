@@ -71,6 +71,7 @@ mrdiff --site https://example.com ./site   # is the live site in sync with ./sit
 mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
 
+mrdiff --version                      # mrdiff 0.1.2
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --json a.bin b.bin             # machine readable
 
