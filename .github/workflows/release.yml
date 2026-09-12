@@ -25,7 +25,7 @@ jobs:
         id: build
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          OUT=$(sh scripts/release.sh "$VERSION")
+          OUT=$(sh scripts/release.sh "$VERSION" | tail -2)
           ZIP=$(echo "$OUT" | sed -n 1p)
           SHA=$(echo "$OUT" | sed -n 2p)
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
