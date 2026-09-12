@@ -11,7 +11,7 @@ class Mrdiff < Formula
   desc "Do they differ, and where — images, binaries, URLs, sites, SSH, and text"
   homepage "https://mr-tabata.github.io/MrDiff/"
   url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.1.0/mrdiff-0.1.0-macos.zip"
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000" # TODO: Release の値に
+  sha256 "65a29898b9e790e3dd52125c3f99f24e09b7b53a4fbd026f83f59c6aeb2dbe95"
   version "0.1.0"
   license "MIT"
 
