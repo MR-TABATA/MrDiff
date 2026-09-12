@@ -107,10 +107,21 @@ keys in a different order" is outside what this version says.
 `--tolerance` and `--ignore-alpha` loosen what counts as different. When either
 is on, the output says so — "identical" on its own always means byte-identical.
 
+The default is exact: one unit of difference in one channel is a difference.
+That is deliberate — "identical" with nothing after it always means
+byte-identical. When images differ, the output also says how far apart the values
+got, and what tolerance would close the gap:
+
+```
+Images differ — 1,051 of 1,200 pixels (87.6%)
+First difference at (0, 0)
+  largest per-channel gap: 36 — --tolerance=36 would call these the same
+```
+
 A lossy re-encode does not collapse to zero at a small tolerance: on the test
-pair the largest per-channel gap is 36, so `--tolerance=2` still leaves half the
-pixels different. Read it as a measure of how far the values have spread, not as
-a way to call two files the same.
+pair above the largest gap is 36, so `--tolerance=2` still leaves half the pixels
+different. Read the gap as a measure of how far the values have spread, not as an
+invitation to set the tolerance to it.
 
 ### URLs and the clipboard
 
@@ -190,7 +201,7 @@ and its shape is fixed from v0.1.0 on:
 | `kind` | what it was compared as: `text`, `image`, `binary`, `site` (`--site`), `tree` (`--ssh`) |
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
-| image | `changed`, `total`, `fraction`, `first: {x, y}`; on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict |
+| image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
 | site / tree | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]` |
 | any | `redirected: [{from, to}]` when a URL was redirected |

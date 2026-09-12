@@ -31,11 +31,18 @@ public struct PixelDiff: Equatable, Sendable {
     public let total: Int
     /// 左上から走査して最初に違った位置
     public let first: Point
+    /// 比べたチャンネルの中で、いちばん大きかった値の差（0〜255）。
+    ///
+    /// **既定（完全一致）を変えない代わりに、緩め方を教えるための数。**
+    /// JPEG の再エンコードや前乗算の丸めで「見た目は同じなのに違う」と出たとき、
+    /// `--tolerance=<この値>` なら同じになる、と言える。
+    public let maxGap: Int
 
-    public init(changed: Int, total: Int, first: Point) {
+    public init(changed: Int, total: Int, first: Point, maxGap: Int = 0) {
         self.changed = changed
         self.total = total
         self.first = first
+        self.maxGap = maxGap
     }
 
     /// 違った割合（0.0〜1.0）。`total` が 0 なら 0。
@@ -93,6 +100,7 @@ public func comparePixels(
 
     var changed = 0
     var first: Point? = nil
+    var maxGap = 0
 
     // RGBA の 4 本目がアルファ。それ以外の形では落とす対象が決まらないので、
     // ignoreAlpha は無視する（黙って 3 本目までにすると、別の意味になる）。
@@ -102,19 +110,21 @@ public func comparePixels(
         let rowStart = y * sizeA.width * bytesPerPixel
         for x in 0..<sizeA.width {
             let i = rowStart + x * bytesPerPixel
-            var same = true
-            for c in 0..<channels
-            where abs(Int(a[i + c]) - Int(b[i + c])) > tolerance {
-                same = false
-                break
+            // 画素の差 ＝ チャンネル差の最大。tolerance を超えたら「違う」。
+            // 最大差は全画素で取る（途中で抜けない）── 「いくつ緩めれば同じか」を言うため。
+            var gap = 0
+            for c in 0..<channels {
+                let d = abs(Int(a[i + c]) - Int(b[i + c]))
+                if d > gap { gap = d }
             }
-            if !same {
+            if gap > tolerance {
                 changed += 1
                 if first == nil { first = Point(x: x, y: y) }
             }
+            if gap > maxGap { maxGap = gap }
         }
     }
 
     guard let firstPoint = first else { return .identical }
-    return .differ(PixelDiff(changed: changed, total: total, first: firstPoint))
+    return .differ(PixelDiff(changed: changed, total: total, first: firstPoint, maxGap: maxGap))
 }

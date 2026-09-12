@@ -307,5 +307,8 @@ case .differ(let d):
     print(t("images.first", d.first.x, d.first.y))
     printRedirects()
     if let note { print("  " + note) }
+    // **既定は変えない。代わりに緩め方を教える。**「見た目は同じなのに違う」と出た人が、
+    // どこまで緩めれば同じになるかをここで知る。緩めた上でまだ違うときも、その先の値を言う。
+    print("  " + t("images.gap", d.maxGap, d.maxGap))
     exit(wantsExitCode ? 1 : 0)
 }

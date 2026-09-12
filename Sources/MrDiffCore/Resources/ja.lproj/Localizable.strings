@@ -6,6 +6,7 @@
 "images.differ"        = "%d / %d 画素が違います（%@%%）";
 "images.differ.tiny"   = "%d / %d 画素が違います";
 "images.first"         = "最初の違いは (%d, %d)";
+"images.gap"           = "チャンネルの差の最大は %d ── --tolerance=%d なら同じになります";
 
 /* 緩めて比べたときは、そう言う。「同じ」とだけ言うと嘘になる。 */
 "note.compared_with"   = "%@ で比較";

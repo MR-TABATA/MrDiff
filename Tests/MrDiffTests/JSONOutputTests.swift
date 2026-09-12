@@ -43,9 +43,9 @@ final class JSONOutputTests: XCTestCase {
     // MARK: - 画像
 
     func testImageDiffer() {
-        let d = PixelDiff(changed: 3, total: 100, first: Point(x: 4, y: 5))
+        let d = PixelDiff(changed: 3, total: 100, first: Point(x: 4, y: 5), maxGap: 7)
         let s = JSONOutput.encode(JSONOutput.image(.differ(d), tolerance: 0, ignoreAlpha: false))
-        XCTAssertEqual(s, #"{"changed":3,"first":{"x":4,"y":5},"fraction":0.03,"kind":"image","result":"differ","total":100}"#)
+        XCTAssertEqual(s, #"{"changed":3,"first":{"x":4,"y":5},"fraction":0.03,"kind":"image","max_gap":7,"result":"differ","total":100}"#)
     }
 
     func testImageSizeMismatch() {

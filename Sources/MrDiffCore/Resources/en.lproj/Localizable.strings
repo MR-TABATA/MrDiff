@@ -6,6 +6,7 @@
 "images.differ"        = "Images differ — %d of %d pixels (%@%%)";
 "images.differ.tiny"   = "Images differ — %d of %d pixels";
 "images.first"         = "First difference at (%d, %d)";
+"images.gap"           = "largest per-channel gap: %d — --tolerance=%d would call these the same";
 
 /* 緩めて比べたときは、そう言う。「同じ」とだけ言うと嘘になる。 */
 "note.compared_with"   = "compared with %@";

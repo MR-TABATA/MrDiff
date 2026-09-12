@@ -37,6 +37,36 @@ final class PixelDiffTests: XCTestCase {
         XCTAssertEqual(d.fraction, 0.25)
     }
 
+    /// **既定は変えない。代わりに「いくつ緩めれば同じか」を返す。**
+    /// 最大差は違った画素だけでなく、緩めて「同じ」と数えた画素も含めて取る ──
+    /// そうでないと、緩めた上での「あと少し」が言えない。
+    func test_チャンネル差の最大を返す() {
+        let a = buf([black, white, white, black])
+        let b = buf([[0, 0, 3, 255], [255, 250, 255, 255], white, black])   // 差 3 と 5
+        guard case .differ(let d) = comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2, bytesPerPixel: 4) else {
+            return XCTFail("differ が返るはず")
+        }
+        XCTAssertEqual(d.changed, 2)
+        XCTAssertEqual(d.maxGap, 5)
+
+        // tolerance=3 で差 3 の画素は同じになるが、最大差は 5 のまま言う
+        guard case .differ(let e) = comparePixels(a: a, sizeA: size2x2, b: b, sizeB: size2x2,
+                                                  bytesPerPixel: 4, tolerance: 3) else {
+            return XCTFail("差 5 が残るので differ")
+        }
+        XCTAssertEqual(e.changed, 1)
+        XCTAssertEqual(e.maxGap, 5)
+
+        // ignoreAlpha のとき、アルファの差は最大差にも入れない
+        let c = buf([[0, 0, 0, 100], white, white, black])
+        guard case .differ(let f) = comparePixels(a: a, sizeA: size2x2, b: c, sizeB: size2x2, bytesPerPixel: 4) else {
+            return XCTFail("アルファが違う")
+        }
+        XCTAssertEqual(f.maxGap, 155)
+        XCTAssertEqual(comparePixels(a: a, sizeA: size2x2, b: c, sizeB: size2x2,
+                                     bytesPerPixel: 4, ignoreAlpha: true), .identical)
+    }
+
     func test_最初の差分は左上から走査した順() {
         let a = buf([black, black, black, black])
         let b = buf([black, black, black, white])   // 右下だけ違う

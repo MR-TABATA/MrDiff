@@ -61,6 +61,7 @@ public enum JSONOutput {
             // Swift の最短表現（"0.03"）を Decimal に読ませて、その字面で書かせる。
             o["fraction"] = NSDecimalNumber(string: String(d.fraction))
             o["first"] = ["x": d.first.x, "y": d.first.y]
+            o["max_gap"] = d.maxGap   // --tolerance=<これ> なら同じになる
         }
         if tolerance > 0 { o["tolerance"] = tolerance }
         if ignoreAlpha { o["ignore_alpha"] = true }
