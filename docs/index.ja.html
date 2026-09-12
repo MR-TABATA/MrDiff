@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MrDiff — 画像もバイナリも URL も、もちろんテキストも。違うか、どこが、を答える</title>
+  <meta name="description" content="画像・バイナリ・URL・クリップボード・公開中のサイト・SSH 越しのディレクトリ。どれも同じコマンドで、同じ 2 つを答える ── 違うか、どこが。macOS、MIT、無料。">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="MrDiff">
+  <meta property="og:description" content="画像もバイナリも URL も、もちろんテキストも。違うか、どこが、を答える。公開中のサイトや SSH 越しのディレクトリも同じコマンドで。">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/index.ja.html">
+  <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="canonical" href="https://mr-tabata.github.io/MrDiff/index.ja.html">
+  <link rel="alternate" hreflang="ja" href="https://mr-tabata.github.io/MrDiff/index.ja.html">
+  <link rel="alternate" hreflang="en" href="https://mr-tabata.github.io/MrDiff/index.en.html">
+  <link rel="alternate" hreflang="x-default" href="https://mr-tabata.github.io/MrDiff/">
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23e8593a'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='9'%3E%3Ccircle cx='40' cy='40' r='19'/%3E%3Ccircle cx='60' cy='60' r='19'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="stylesheet" href="lp.css">
+</head>
+<body>
+  <!-- Inline logo template. Kept out of flow with width/height 0 rather than
+       display:none — a display:none subtree does not resolve the gradient
+       (paint server) the logo tile references. Same glyph as art/icon.svg. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="logoBg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FF9A6B"/>
+        <stop offset="1" stop-color="#B8321E"/>
+      </linearGradient>
+      <radialGradient id="logoGloss" cx="50%" cy="0%" r="80%">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"/>
+        <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <symbol id="logo" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="23" fill="url(#logoBg)"/>
+      <rect width="100" height="100" rx="23" fill="url(#logoGloss)"/>
+      <g fill="none" stroke="#ffffff" stroke-width="8">
+        <circle cx="42" cy="42" r="18"/>
+        <circle cx="58" cy="58" r="18"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <nav>
+    <div class="brand"><svg><use href="#logo"/></svg> MrDiff</div>
+    <div class="nav-links">
+      <a href="#what">答えること</a>
+      <a href="#honest">答えないこと</a>
+      <a href="#install">インストール</a>
+      <a href="https://github.com/MR-TABATA/MrDiff" target="_blank" rel="noopener">GitHub</a>
+      <a class="lang-switch" href="index.en.html" hreflang="en" lang="en">English</a>
+    </div>
+  </nav>
+
+  <!-- ===== Hero ===== -->
+  <header class="hero">
+    <div class="wrap">
+      <svg class="logo"><use href="#logo"/></svg>
+      <h1 style="font-size:46px;letter-spacing:-0.5px;">画像もバイナリも URL も、もちろんテキストも。<br><span class="accent">違うか、どこが、を答える。</span></h1>
+      <p class="lead">画像・バイナリ・URL・クリップボード・公開中のサイト・SSH 越しのディレクトリ。<strong>どれも同じコマンドで、同じ 2 つを答える ── 違うか、どこが。</strong>ウィンドウは開かない。</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="#install">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          brew install
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/MR-TABATA/MrDiff" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+          GitHub で見る
+        </a>
+      </div>
+      <div class="attrs">
+        <span>1 つのコマンドで、どの種類でも</span>
+        <span>macOS・バイナリ 1 つ・依存なし</span>
+        <span>MIT ライセンス — 無料</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== The answer ===== -->
+  <section class="demo">
+    <div class="wrap">
+      <div class="answer">
+<pre><span class="p">$</span> <span class="cmd">mrdiff before.png after.png</span>
+<span class="out">Images differ — 12,481 of 390,000 pixels (3.2%)</span>
+<span class="out">First difference at (412, 88)</span>
+
+<span class="p">$</span> <span class="cmd">mrdiff firmware-v1.bin firmware-v2.bin</span>
+<span class="out">Binary files differ — 47 regions, first at 0x1A3F</span>
+
+<span class="p">$</span> <span class="cmd">mrdiff --ssh ./site deploy@host:/var/www</span>
+<span class="out">changed   config/app.yml</span>
+<span class="out">only local (not deployed)   pages/new.html</span>
+<span class="out">only on remote (left over?)   backups/customers.sql</span></pre>
+      </div>
+      <p class="answer-caption">画像も、バイナリも、サーバも、同じ形の答え。いま開いているターミナルの中に。</p>
+    </div>
+  </section>
+
+  <!-- ===== Two questions ===== -->
+  <section class="two">
+    <div class="wrap">
+      <p class="q">違うか、<span class="accent">どこが。</span></p>
+      <p class="a">MrDiff が答えるのはこの 2 つで、そう決めてある。差分を<em>見せる</em>ことはしない。その代わり、テキストでも画像でもバイナリでも、公開中のサイトでも 10 GB のログでも、同じ問いに同じ形で答える。ファイルの種類ごとに道具を覚えなくていい。</p>
+    </div>
+  </section>
+
+  <!-- ===== What it answers ===== -->
+  <section id="what">
+    <div class="wrap">
+      <div class="section-title">
+        <h2>1 つのコマンドで、どの種類でも</h2>
+        <p>どの比較を走らせるかは、拡張子ではなく中身で決める。<code>.bin</code> と名付けられた PNG も画像として比べる。</p>
+      </div>
+
+      <div class="features primary">
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <h3>画像</h3>
+          <p>違うか、何画素が、最初はどこか。画素を数えるので、1 画素の違いが「0.0%」に丸まることはない。<code>--tolerance=N</code> で再エンコード程度の差を同じとみなせる。緩めたときは出力にそう書く — 何も付かない「同じ」は、必ずバイト単位で同じという意味。</p>
+<pre class="ex"><span class="p">$</span> mrdiff --tolerance=2 a.png b.jpg
+<span class="out">Images differ — 1,560 of 390,000 pixels (0.4%)</span>
+<span class="out">  compared with ±2 per channel</span></pre>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
+          <h3>バイナリ</h3>
+          <p>違う箇所がいくつあり、最初はどのオフセットか（16 進）。隣り合うバイトは 1 箇所と数える。長さが違えば共通部分だけを比べ、余りは余りとして言う — 1 バイトの挿入が「以降ぜんぶ違う」にはならない。</p>
+<pre class="ex"><span class="p">$</span> mrdiff v1.bin v2.bin
+<span class="out">Binary files differ — 47 regions, first at 0x6BDF</span>
+<span class="out">  158 of 2,000,000 bytes differ</span></pre>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
+          <h3>テキストとソース</h3>
+          <p>行の差分に、文字単位のハイライト。動いた 1 文字に印が付く — 行ごと赤く塗るだけでは足りない。行番号は左右 2 列。消えた 7 行目と増えた 7 行目は同じ行ではない。</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
+          <h3>URL とクリップボード</h3>
+          <p><code>mrdiff https://a https://b</code> は両方を取ってきて、サーバが返したものを比べる。<code>--clipboard</code> は、いまコピーしたもの — 文字が無ければスクリーンショット — をファイルや URL と比べる。何も保存せずに「さっきのと同じ？」が聞ける。</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.6"/><polyline points="21 3 21 9 15 9"/></svg></div>
+          <h3>公開中のサイトと、元のフォルダ</h3>
+          <p><code>--site</code> はフォルダの <strong>git 管理下</strong>のファイルを 1 つずつサイトから取ってきて、合わないものを言う: 違う、またはサイトに無い。「置いてあるべきファイル」を決めるのは <code>git ls-files</code> なので、ビルドの中間物や <code>.DS_Store</code> は数えない。「これ、デプロイし忘れてない？」が CI のチェックになる。</p>
+<pre class="ex"><span class="p">$</span> mrdiff --site https://example.com ./site
+<span class="out">changed       index.html</span>
+<span class="out">not on site   pricing.html</span></pre>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+          <h3>手元のディレクトリとサーバ、SSH 越しに</h3>
+          <p><code>host:/path</code> はファイルとして使える。<code>--ssh</code> はツリー全体を<strong>両方向</strong>で見る。だから、デプロイ確認がふつう出せない 3 つ目が出る: <strong>サーバにあってリポジトリに無いファイル</strong> — 古い書き出し、忘れたバックアップ。認証は手元の <code>ssh</code> のもの: 鍵、<code>~/.ssh/config</code>、agent。パスワードは聞かない。</p>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top: 72px;">
+        <h2 class="sub">パイプラインに置く前提で</h2>
+      </div>
+      <ul class="secondary">
+        <li class="sec-item">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><h4><code>--exit-code</code></h4><p>違えば 1 で終わる。スクリーンショットの回帰、ファームウェアのビルド比較、「生成物は変わったか」 — 差分を見る必要は無く、あるかどうかだけ知りたい場面のため。</p></div>
+        </li>
+        <li class="sec-item">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/></svg></div>
+          <div><h4><code>--format json</code></h4><p>機械向け。訳さない — 出力を grep するスクリプトは、使う人の言語が何でも壊れない。</p></div>
+        </li>
+        <li class="sec-item">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div><h4>読むのが費用</h4><p>2 つが同じだと言うには、両方を最後まで読むしかない — ハッシュでもそれは避けられない。避けるのは、既に一致しているブロックの中の 1 バイトずつの比較。5 バイトだけ違う 1 GB は、同じ 1 GB とほぼ同じ時間で済む（コールドで 4.3 秒、キャッシュから 0.1 秒、M4 Max）。</p></div>
+        </li>
+        <li class="sec-item">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><h4>手元から何も出ない</h4><p>アカウントも、テレメトリも、サーバも無い。URL はキャッシュを使わず取るので、古い写しと比べることがない。リクエストは <code>mrdiff</code> と名乗る。</p></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== What it won't do ===== -->
+  <section id="honest" class="honest">
+    <div class="wrap">
+      <div class="section-title">
+        <h2>答えないこと</h2>
+        <p>どれも道具が自分で毎回そう言う。使う人が後で気づく形にはしない。</p>
+      </div>
+      <div class="features" style="grid-template-columns:repeat(2,1fr);">
+        <div class="card">
+          <h3>差分を見せはしない</h3>
+          <p>答えるのは「違うか」と「どこが」。2 枚の画像や 2 つのファームウェアが<em>どう</em>違うかを見るのは別の道具の仕事で、MrDiff はそのふりをしない。</p>
+        </div>
+        <div class="card">
+          <h3>URL は、サーバが返したもの</h3>
+          <p>JavaScript は動かさないし描画もしないので、ブラウザで見える画面と答えが違うことがある。そこをごまかすと、無い違いを「違う」と言う道具になる。</p>
+        </div>
+        <div class="card">
+          <h3>Markdown や JSON は、テキストとして比べる</h3>
+          <p>行の文字列を比べる。整形を変えただけでも違いに数える。<code>**強調**</code> を外した、キーの順番を変えた、といった「意味は同じ」を同じと言うのは、この版の仕事の外。</p>
+        </div>
+        <div class="card">
+          <h3><code>--site</code> は、git に無いファイルを見られない</h3>
+          <p>HTTP にはディレクトリ一覧が無い。サーバに置き忘れた <code>customers.xlsx</code> はここからは見えず、「サイトはきれい」と読ませないために毎回そう書く。SSH ならリモート側を列挙<em>できる</em>ので、そちらでは出る。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Install ===== -->
+  <section id="install">
+    <div class="wrap">
+      <div class="section-title">
+        <h2>インストール</h2>
+        <p>バイナリ 1 つ。ほかに入れるものは無い。</p>
+      </div>
+      <div class="install">
+<pre><span class="p">$</span> <span class="cmd">brew install mr-tabata/tap/mrdiff</span>
+
+<span class="c"># あとは</span>
+<span class="p">$</span> <span class="cmd">mrdiff a.png b.png</span>
+<span class="p">$</span> <span class="cmd">mrdiff a.bin b.bin</span>
+<span class="p">$</span> <span class="cmd">mrdiff https://example.com/a https://example.com/b</span>
+<span class="p">$</span> <span class="cmd">mrdiff --clipboard notes.md</span>
+<span class="p">$</span> <span class="cmd">mrdiff --site https://example.com ./site</span>
+<span class="p">$</span> <span class="cmd">mrdiff local.conf host:/etc/app.conf</span>
+<span class="p">$</span> <span class="cmd">mrdiff --ssh ./site host:/var/www</span>
+
+<span class="p">$</span> <span class="cmd">mrdiff --exit-code a.png b.png</span>     <span class="c"># 違えば 1 で終わる</span>
+<span class="p">$</span> <span class="cmd">mrdiff --format json a.bin b.bin</span>   <span class="c"># 機械向け</span></pre>
+      </div>
+      <p style="text-align:center; color: var(--text-dim); font-size: 13px; margin-top: 24px;">
+        macOS 専用。Swift 製で、画像の読み込みに OS の ImageIO を使うため。
+        出力は既定で英語。<code>MRDIFF_LANG=ja</code> で人向けの行だけ日本語になる。JSON と終了コードは変わらない。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer>
+    <div class="wrap">
+      <div class="brand"><svg style="width:24px;height:24px;border-radius:6px;"><use href="#logo"/></svg> MrDiff</div>
+      <p>Swift · MIT ライセンス</p>
+      <p style="margin-top:8px;">作者: <a href="https://github.com/MR-TABATA" target="_blank" rel="noopener">田畑ひとし</a> · <a href="https://github.com/MR-TABATA/MrDiff" target="_blank" rel="noopener">GitHub</a> · <a href="index.en.html" hreflang="en" lang="en">English</a></p>
+      <p style="margin-top:6px; color:#4a4a4a;">© 2026 田畑ひとし</p>
+    </div>
+  </footer>
+</body>
+</html>
