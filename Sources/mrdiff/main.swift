@@ -75,15 +75,7 @@ if args.contains("--ssh") {
         leftHash: { left[$0] }, rightHash: { right[$0] })
 
     if wantsJSON {
-        func esc(_ s: String) -> String { s.replacingOccurrences(of: "\"", with: "\\\"") }
-        func rows(_ rs: [TreeDiff.Row], _ st: String) -> [String] {
-            rs.map { "{\"path\":\"\(esc($0.path))\",\"status\":\"\(st)\"}" }
-        }
-        let items = rows(d.changed, "changed") + rows(d.onlyLeft, "only_local")
-                  + rows(d.onlyRight, "only_remote")
-        print("{\"in_sync\":\(d.allIdentical),\"changed\":\(d.changed.count),"
-              + "\"only_local\":\(d.onlyLeft.count),\"only_remote\":\(d.onlyRight.count),"
-              + "\"rows\":[\(items.joined(separator: ","))]}")
+        print(JSONOutput.encode(JSONOutput.tree(d)))
     } else {
         for r in d.changed   { print(t("tree.changed", r.path)) }
         for r in d.onlyLeft  { print(t("tree.only_local", r.path)) }
@@ -128,20 +120,7 @@ if let siteFlagIndex = args.firstIndex(of: "--site") {
         local: { rel in try? Data(contentsOf: dir.appendingPathComponent(rel)) })
 
     if wantsJSON {
-        func esc(_ s: String) -> String { s.replacingOccurrences(of: "\"", with: "\\\"") }
-        let items = result.rows.map { r -> String in
-            let st: String
-            switch r.status {
-            case .identical: st = "identical"
-            case .changed:   st = "changed"
-            case .missing:   st = "missing"
-            case .error:     st = "error"
-            }
-            return "{\"path\":\"\(esc(r.entry.localPath))\",\"status\":\"\(st)\"}"
-        }
-        print("{\"in_sync\":\(result.allInSync),\"files\":\(entries.count),"
-              + "\"changed\":\(result.changed.count),\"missing\":\(result.missing.count),"
-              + "\"errors\":\(result.errored.count),\"rows\":[\(items.joined(separator: ","))]}")
+        print(JSONOutput.encode(JSONOutput.site(result)))
     } else {
         for r in result.changed { print(t("site.changed", r.entry.localPath)) }
         for r in result.missing { print(t("site.missing", r.entry.localPath)) }
@@ -172,6 +151,7 @@ if useClipboard {
 
 let dataA: Data, dataB: Data
 var redirects: [String] = []
+var redirectsJSON: [JSONOutput.Redirect] = []
 do {
     let ra = try inputs[0].readDetailed()
     let rb = try inputs[1].readDetailed()
@@ -182,13 +162,14 @@ do {
     for (input, fetched) in zip(inputs, [ra, rb]) {
         if let landed = fetched.finalURL {
             redirects.append(t("note.redirected", input.label, landed.absoluteString))
+            redirectsJSON.append(.init(from: input.label, to: landed.absoluteString))
         }
     }
 } catch {
     die("\(error)")
 }
 
-/// 飛ばし先の注意書きを出す。**JSON には出さない**（機械向けは静かに保つ）。
+/// 飛ばし先の注意書きを出す（人向け）。JSON では `redirected` として同じことを言う。
 func printRedirects() {
     guard !wantsJSON else { return }
     for line in redirects { print("  " + line) }
@@ -211,11 +192,7 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
 
     let d = compareText(TextSource(data: dataA), TextSource(data: dataB))
     if wantsJSON {
-        if d.isIdentical {
-            print(#"{"result":"identical"}"#)
-        } else {
-            print("{\"result\":\"differ\",\"changed\":\(d.changed),\"added\":\(d.added),\"removed\":\(d.removed)}")
-        }
+        print(JSONOutput.encode(JSONOutput.text(d, redirects: redirectsJSON)))
     } else if d.isIdentical {
         print(t("text.identical"))
         printRedirects()
@@ -247,14 +224,7 @@ if !imageA {
     let d = BinaryDiff.compare(dataA, dataB)
 
     if wantsJSON {
-        if d.isIdentical {
-            print(#"{"result":"identical"}"#)
-        } else {
-            let first = d.first.map { "\($0.offset)" } ?? "null"
-            print("{\"result\":\"differ\",\"regions\":\(d.regions.count),"
-                  + "\"differing_bytes\":\(d.differingBytes),\"first_offset\":\(first),"
-                  + "\"size_a\":\(d.sizeA),\"size_b\":\(d.sizeB)}")
-        }
+        print(JSONOutput.encode(JSONOutput.binary(d, redirects: redirectsJSON)))
     } else if d.isIdentical {
         print(t("binary.identical"))
         printRedirects()
@@ -308,38 +278,34 @@ let note = relaxations.isEmpty
     ? nil
     : t("note.compared_with", relaxations.joined(separator: t("note.separator")))
 
+if wantsJSON {
+    print(JSONOutput.encode(JSONOutput.image(result, tolerance: tolerance, ignoreAlpha: ignoreAlpha,
+                                             redirects: redirectsJSON)))
+    if case .identical = result { exit(0) }
+    exit(wantsExitCode ? 1 : 0)
+}
+
 switch result {
 case .identical:
-    if wantsJSON { print(#"{"result":"identical"}"#) }
-    else {
-        print(t("images.identical"))
-        printRedirects()
-        if let note { print("  " + note) }
-    }
+    print(t("images.identical"))
+    printRedirects()
+    if let note { print("  " + note) }
     exit(0)
 
 case .sizeMismatch(let sa, let sb):
-    if wantsJSON {
-        print(#"{"result":"size_mismatch","a":{"width":\#(sa.width),"height":\#(sa.height)},"b":{"width":\#(sb.width),"height":\#(sb.height)}}"#)
-    } else {
-        print(t("images.size_mismatch", sa.width, sa.height, sb.width, sb.height))
-    }
+    print(t("images.size_mismatch", sa.width, sa.height, sb.width, sb.height))
     exit(wantsExitCode ? 1 : 0)
 
 case .differ(let d):
-    if wantsJSON {
-        print(#"{"result":"differ","changed":\#(d.changed),"total":\#(d.total),"fraction":\#(d.fraction),"first":{"x":\#(d.first.x),"y":\#(d.first.y)}}"#)
+    // **数を先に言う。**割合は、丸めて消えないときだけ添える ――
+    // 「0.0%」は「同じ」と読めてしまう（PixelDiff.displayPercent）。
+    if let pct = d.displayPercent {
+        print(t("images.differ", d.changed, d.total, pct))
     } else {
-        // **数を先に言う。**割合は、丸めて消えないときだけ添える ――
-        // 「0.0%」は「同じ」と読めてしまう（PixelDiff.displayPercent）。
-        if let pct = d.displayPercent {
-            print(t("images.differ", d.changed, d.total, pct))
-        } else {
-            print(t("images.differ.tiny", d.changed, d.total))
-        }
-        print(t("images.first", d.first.x, d.first.y))
-        printRedirects()
-        if let note { print("  " + note) }
+        print(t("images.differ.tiny", d.changed, d.total))
     }
+    print(t("images.first", d.first.x, d.first.y))
+    printRedirects()
+    if let note { print("  " + note) }
     exit(wantsExitCode ? 1 : 0)
 }

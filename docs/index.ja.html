@@ -173,7 +173,7 @@
         </li>
         <li class="sec-item">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/></svg></div>
-          <div><h4><code>--format json</code></h4><p>機械向け。訳さない — 出力を grep するスクリプトは、使う人の言語が何でも壊れない。</p></div>
+          <div><h4><code>--json</code></h4><p>機械向け。訳さない — 出力を grep するスクリプトは、使う人の言語が何でも壊れない。</p></div>
         </li>
         <li class="sec-item">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
@@ -235,7 +235,7 @@
 <span class="p">$</span> <span class="cmd">mrdiff --ssh ./site host:/var/www</span>
 
 <span class="p">$</span> <span class="cmd">mrdiff --exit-code a.png b.png</span>     <span class="c"># 違えば 1 で終わる</span>
-<span class="p">$</span> <span class="cmd">mrdiff --format json a.bin b.bin</span>   <span class="c"># 機械向け</span></pre>
+<span class="p">$</span> <span class="cmd">mrdiff --json a.bin b.bin</span>          <span class="c"># 機械向け</span></pre>
       </div>
       <p style="text-align:center; color: var(--text-dim); font-size: 13px; margin-top: 24px;">
         macOS 専用。Swift 製で、画像の読み込みに OS の ImageIO を使うため。
