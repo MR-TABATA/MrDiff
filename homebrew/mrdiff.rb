@@ -10,9 +10,9 @@
 class Mrdiff < Formula
   desc "Do they differ, and where — images, binaries, URLs, sites, SSH, and text"
   homepage "https://mr-tabata.github.io/MrDiff/"
-  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.1.1/mrdiff-0.1.1-macos.zip"
-  sha256 "4afb4b789248af1d9b4dc0341360ab26c1d8ed3ef5ba71b09ad29e4ef9f71087"
-  version "0.1.1"
+  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.1.2/mrdiff-0.1.2-macos.zip"
+  sha256 "013f9cb9d03424376cf31ce6791b171d778134139a147aafacbf6c71b7fbd634"
+  version "0.1.2"
   license "MIT"
 
   depends_on :macos => :ventura # Package.swift の platforms（.v13）と同じ
