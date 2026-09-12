@@ -14,3 +14,6 @@ DerivedData/
 # （スクリプト自体は追跡する）
 /bench/data/
 /bench/tmp/
+
+# scripts/release.sh が作る配布物
+/dist/
