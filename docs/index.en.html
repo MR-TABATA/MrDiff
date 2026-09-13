@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MrDiff — Images, PDFs, binaries, URLs — and text, of course. Do they differ, and where.</title>
+  <title>MrDiff — Nothing leaves your machine. And it is fast. Do they differ, and where.</title>
   <meta name="description" content="Images, PDFs, binaries, URLs, the clipboard, a deployed site, a directory over SSH — and text, of course. One command that answers the same two things for all of them: do they differ, and where. macOS, MIT, free.">
 
   <!-- Open Graph -->
   <meta property="og:title" content="MrDiff">
-  <meta property="og:description" content="Images, PDFs, binaries, URLs — and text, of course. One command that answers: do they differ, and where.">
+  <meta property="og:description" content="Nothing leaves your machine, and it is fast. A confidential image, a ten-million-line log, a contract in PDF — do they differ, and where, in one command.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/index.en.html">
@@ -66,8 +66,8 @@
   <header class="hero">
     <div class="wrap">
       <svg class="logo"><use href="#logo"/></svg>
-      <h1>Images, PDFs, binaries, URLs — and text, of course.<br><span class="accent">Do they differ, and where.</span></h1>
-      <p class="lead">Images, PDFs, binaries, URLs, the clipboard, a deployed site, a directory over SSH. <strong>One command, and the same two answers for all of them: do they differ, and where.</strong> It never opens a window.</p>
+      <h1>Nothing leaves your machine.<br><span class="accent">And it is fast.</span></h1>
+      <p class="lead">A confidential image, a ten-million-line log, a contract in PDF. <strong>One command, on your own machine, says whether they differ and where.</strong> Not a byte goes out unless you hand it a URL. Ten million lines in 0.7 seconds.</p>
       <div class="btn-row">
         <a class="btn btn-primary" href="#install">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
@@ -95,22 +95,24 @@
 <span class="out">First difference at (412, 88)</span>
 <span class="out">  largest per-channel gap: 41 — --tolerance=41 would call these the same</span>
 
+<span class="p">$</span> <span class="cmd">mrdiff app-2026-09-12.log app-2026-09-13.log</span>     <span class="c"># 780 MB, 10,000,000 lines — 0.7 s</span>
+<span class="out">2 changed, 0 added, 0 removed</span>
+<span class="out">              … 4999996 unchanged</span>
+<span class="out">4999997       - 09:08:19 INFO  GET /api/items/3523 status=200 latency=34ms</span>
+<span class="out">        4999997 + 09:08:19 INFO  GET /api/items/3523 status=500 latency=34ms</span>
+
+<span class="p">$</span> <span class="cmd">mrdiff --text contract-v1.pdf contract-v2.pdf</span>
+<span class="out">text: 1 lines changed, 0 added, 0 removed</span>
+<span class="out">   12      - Article 3  Delivery by 31 October 2026.</span>
+<span class="out">        12 + Article 3  Delivery by 30 November 2026.</span>
+
 <span class="p">$</span> <span class="cmd">mrdiff proof-v1.pdf proof-v2.pdf</span>
 <span class="out">PDFs differ — 1 of 12 pages</span>
 <span class="out">p.7  1 region</span>
 <span class="out">     top 69 mm, left 96 mm, 16 × 5 mm</span>
-
-<span class="p">$</span> <span class="cmd">mrdiff firmware-v1.bin firmware-v2.bin</span>
-<span class="out">Binary files differ — 47 regions, first at 0x1A3F</span>
-<span class="out">  158 of 2,000,000 bytes differ</span>
-
-<span class="p">$</span> <span class="cmd">mrdiff --ssh ./site deploy@host:/var/www</span>
-<span class="out">changed   config/app.yml</span>
-<span class="out">only local (not deployed)   pages/new.html</span>
-<span class="out">only on remote (left over?)   backups/customers.sql</span>
-<span class="out">1 changed, 1 only local, 1 only on remote</span></pre>
+<span class="out">  the text is identical — only the rendering differs (fonts, images, layout)</span></pre>
       </div>
-      <p class="answer-caption">An image, a PDF, a binary, a server — the answer has the same shape. In the terminal you are already in.</p>
+      <p class="answer-caption">An image, a log, a PDF — the answer has the same shape. In the terminal you are already in, and sent nowhere.</p>
     </div>
   </section>
 
@@ -143,7 +145,7 @@
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="12" width="8" height="6" rx="1"/></svg></div>
           <h3>PDFs</h3>
-          <p>Which pages differ, and where on the page — <strong>in millimetres, not pixels</strong>. Each page is rendered and compared like an image, so the answer is the one a proofreader wants, and a byte comparison never gives: one corrected word re-packs the whole file. Pages are paired by number; extra pages are listed, not compared.</p>
+          <p>Which pages differ, and where on the page — <strong>in millimetres, not pixels</strong>. Each page is rendered and compared like an image, so the answer is the one a proofreader wants, and a byte comparison never gives: one corrected word re-packs the whole file. Pages are paired by number; extra pages are listed, not compared. The text is compared too, and <code>--text</code> shows which lines changed — a re-exported proof and a reworded contract are different events, and the output says which one you have.</p>
 <pre class="ex"><span class="p">$</span> mrdiff proof-v1.pdf proof-v2.pdf
 <span class="out">PDFs differ — 1 of 12 pages</span>
 <span class="out">p.7  1 region</span>
