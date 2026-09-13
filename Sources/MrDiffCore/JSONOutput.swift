@@ -74,8 +74,17 @@ public enum JSONOutput {
 #if canImport(PDFKit)
     /// PDF。ページごとの答えを `pages` に並べる（両方にあるページだけ）。場所は mm。
     /// `dpi` は描いた解像度 ―― `changed` / `total` はこれに依るので、必ず添える。
-    public static func pdf(_ r: PDFComparison, tolerance: Int, redirects: [Redirect] = []) -> [String: Any] {
+    public static func pdf(_ r: PDFComparison, tolerance: Int, text: TextDiff? = nil,
+                           redirects: [Redirect] = []) -> [String: Any] {
         var o: [String: Any] = ["kind": "pdf"]
+        // 文字の差。文字が無い（スキャン）なら null ―― 「同じ」と読めないように。
+        if let td = text {
+            o["text"] = ["changed": td.changed, "added": td.added, "removed": td.removed,
+                         "lines_a": td.left.lines.count, "lines_b": td.right.lines.count,
+                         "result": td.isIdentical ? "identical" : "differ"] as [String: Any]
+        } else {
+            o["text"] = NSNull()
+        }
         o["result"] = r.isIdentical ? "identical" : "differ"
         o["pages_a"] = r.pagesA
         o["pages_b"] = r.pagesB

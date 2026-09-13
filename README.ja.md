@@ -90,6 +90,7 @@ OS のロケールも見ない ── Issue に貼った出力が、答える側
 mrdiff a.txt b.txt                    # テキスト
 mrdiff a.png b.png                    # 画像 ── 要約。絵は出さない
 mrdiff a.pdf b.pdf                    # PDF ── どのページの、どこか（mm）
+mrdiff --text a.pdf b.pdf             # PDF ── どの行の文言が変わったか
 mrdiff a.bin b.bin                    # バイナリ ── 要約
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # クリップボード vs ファイル
@@ -181,8 +182,24 @@ p.13  only in B
 ページは番号で対にする。ページ数が違えば、余ったページは列挙するだけで比べない。
 紙の大きさが違うページはそう言ってそれ以上比べない（大きさの違う画像と同じ）。
 ページは 72 dpi（1 pt = 1 px）で白地に描くので、`--ignore-alpha` には効く相手が無く、
-断る。`--tolerance` は画像と同じに効く。見た目の比較だけで、変わった語は
-「変わった領域」として見つかるが、文字としては引用しない。
+断る。`--tolerance` は画像と同じに効く。
+
+文字も比べて、別に言う ── 書き出し直してフォントが変わった校正刷りと、条項の文言が変わった
+契約書は、別の事件だから：
+
+```
+  文字は同じ ── 違うのは見た目だけ（フォント・画像・組み）
+```
+```
+  文字が 3 行違います ── mrdiff --text で中身が出ます
+```
+
+`--text` を付けると、見た目の代わりにその diff を出す。PDFKit が抜いた文字を 1 行 1 行、
+`[p.N]` でページの境を示し、ほかのテキスト diff と同じ文字単位のハイライトつき。
+注釈（校正者の FreeText の書き込み、コメント）とフォームに打った値は `[FreeText] …` の行として
+入る ── それも文言で、バイト比較には見えない。文字の無い PDF（スキャン）はそう言って、
+見た目だけで比べる。行の順は PDFKit のもので、書き出す道具によっては崩れる。そのときは
+見た目の答えのほうを信じる。
 
 ### URL とクリップボード
 
@@ -319,9 +336,10 @@ only in B   chapter-07.md
 | `result` | `identical` か `differ`。画像は `size_mismatch` も。`--site` は、違いは無いが確認できなかったファイルがあれば `error` |
 | text | `changed`、`added`、`removed`。`changed` は置き換えられた塊を両側の大きいほうで数える ── 1 行消して 2 行足せば `changed: 2` |
 | image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
-| pdf | `pages_a`、`pages_b`、`dpi`、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
+| pdf | `pages_a`、`pages_b`、`dpi`、`text`（`{result, changed, added, removed, lines_a, lines_b}`。片方に文字が無ければ null）、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |
 | site / tree / dir / archive | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]`。`dir` と `archive` は両側を `only_a` / `only_b` と呼ぶ（`tree` は `only_local` / `only_remote`） |
+| pdf-text（`--text`） | `text` のキーを、抜いた文字の行で数えたもの |
 | docx | `text` のキーを段落で数えたもの ＋ `paragraphs_a`、`paragraphs_b`、`other_parts_changed`。本文以外だけ違うときも `result` は `differ` |
 | font | `name_a/b`、`version_a/b`（無ければ null）、`characters_a/b`、`compared`、`changed`、`changed_codepoints: [int]`、`only_a: [int]`、`only_b: [int]`（コードポイント、10 進）、`cell` |
 | 共通 | URL が飛ばされたときの `redirected: [{from, to}]` |

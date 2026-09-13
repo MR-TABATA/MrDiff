@@ -44,6 +44,7 @@ if args.contains("--help") || args.contains("-h") {
         ("--json",                "help.json"),
         ("--tolerance=N",         "help.tolerance"),
         ("--ignore-alpha",        "help.ignore_alpha"),
+        ("--text",                "help.text"),
         ("--color=auto|always|never", "help.color"),
         ("--no-pager",            "help.no_pager"),
         ("--clipboard",           "help.clipboard"),
@@ -70,6 +71,7 @@ let wantsExitCode = args.contains("--exit-code")
 let ignoreAlpha = args.contains("--ignore-alpha")
 let noPager = args.contains("--no-pager")
 let useClipboardFlag = args.contains("--clipboard")
+let wantsText = args.contains("--text")
 let files = args.filter { !$0.hasPrefix("-") }
 
 func die(_ message: String) -> Never {
@@ -278,6 +280,9 @@ func fileURL(for input: Input, data: Data, suffix: String) throws -> URL {
     return tmp
 }
 
+// `--text` は PDF のもの。ほかに渡されたら黙って飲まない（効かないつまみの線）。
+if wantsText && !(looksLikePDF(dataA) && looksLikePDF(dataB)) { die(t("error.text_flag")) }
+
 if detectKind(dataA) == .text && detectKind(dataB) == .text {
     // **効かないつまみを黙って飲まない。**--tolerance と --ignore-alpha は画素の話で、
     // 行には意味が無い。黙って無視すると「指定したのに効いていない」に気づけない。
@@ -315,12 +320,40 @@ if pdfA != pdfB { die(t("error.mixed_pdf")) }
 if pdfA {
     // 描くときに白で潰すので、透明度は見るものが無い。黙って飲まない（画像の線と同じ）。
     if ignoreAlpha { die(t("error.pdf_alpha_flag")) }
+    // **文字も抜く。** 見た目の差は「どこが」までで、契約書は「どの文言が」を知りたい。
+    // 両方に文字があれば行 diff に掛け、--text ならそれを見せる。無ければ見た目だけ
+    // （スキャンした PDF）で、そのことを言う。
+    let textDiff: TextDiff? = {
+        guard let ta = PDFText.text(in: dataA), let tb = PDFText.text(in: dataB) else { return nil }
+        return compareText(TextSource(data: Data(ta.utf8)), TextSource(data: Data(tb.utf8)))
+    }()
+    if wantsText {
+        guard let td = textDiff else { die(t("error.pdf_no_text")) }
+        if wantsJSON {
+            var o = JSONOutput.text(td, redirects: redirectsJSON)
+            o["kind"] = "pdf-text"
+            print(JSONOutput.encode(o))
+        } else if td.isIdentical {
+            print(t("pdf.text.identical", td.left.lines.count))
+            printRedirects()
+        } else {
+            let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
+            var out = Out(to: sink ?? stdout)
+            out.line(t("pdf.text.summary", td.changed, td.added, td.removed))
+            for line in redirects { out.line("  " + line) }
+            renderText(td, style: Style(on: useColor), into: &out)
+            out.flush()
+            Pager.finish()
+        }
+        exit(td.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+    }
+
     let d: PDFComparison
     do { d = try comparePDFs(dataA, dataB, tolerance: tolerance) }
     catch { die("\(error)") }
 
     if wantsJSON {
-        print(JSONOutput.encode(JSONOutput.pdf(d, tolerance: tolerance, redirects: redirectsJSON)))
+        print(JSONOutput.encode(JSONOutput.pdf(d, tolerance: tolerance, text: textDiff, redirects: redirectsJSON)))
         exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
     }
     if d.isIdentical {
@@ -362,6 +395,14 @@ if pdfA {
         print(from == to ? t("pdf.only.one", from, more) : t("pdf.only", from, to, more))
     }
     printRedirects()
+    // 文字の差は別に言う。**見た目が違って文字が同じ**（フォントの差し替え、再エンコード）と、
+    // 文言が変わったのは、校正では別の事件。
+    if let td = textDiff {
+        if td.isIdentical { print("  " + t("pdf.text.same")) }
+        else { print("  " + t("pdf.text.hint", td.changed + td.added + td.removed)) }
+    } else {
+        print("  " + t("pdf.text.none"))
+    }
     print("  " + t("pdf.rendered", d.dpi))
     if tolerance > 0 { print("  " + t("note.compared_with", t("note.tolerance", tolerance))) }
     exit(wantsExitCode ? 1 : 0)

@@ -134,3 +134,13 @@
 "font.rendered"        = "1 字ずつ %d px の枠に描いて、画素で比べました";
 "error.not_a_font"     = "CoreText で開けるフォント（OTF・TTF・TTC）ではありません";
 "error.mixed_font"     = "フォントとフォントでないものは比べられません";
+
+/* PDF の文字。 */
+"help.text"            = "PDF：見た目ではなく文字を比べる（1 行 1 行、[p.N] がページの境）";
+"pdf.text.identical"   = "文字に違いはありません（%d 行）";
+"pdf.text.summary"     = "文字: %d 行変更、%d 追加、%d 削除";
+"pdf.text.same"        = "文字は同じ ── 違うのは見た目だけ（フォント・画像・組み）";
+"pdf.text.hint"        = "文字が %d 行違います ── mrdiff --text で中身が出ます";
+"pdf.text.none"        = "比べる文字がありません（スキャンしたページ？）";
+"error.pdf_no_text"    = "片方の PDF に文字がありません（スキャンしたページ？）── --text 無しで比べてください";
+"error.text_flag"      = "--text は PDF のものです";

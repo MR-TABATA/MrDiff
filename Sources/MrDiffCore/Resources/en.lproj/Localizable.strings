@@ -134,3 +134,13 @@
 "font.rendered"        = "each glyph rendered in a %d px cell and compared pixel by pixel";
 "error.not_a_font"     = "not a font CoreText can open (OTF, TTF, TTC)";
 "error.mixed_font"     = "cannot compare a font with a non-font file";
+
+/* PDF の文字。 */
+"help.text"            = "PDFs: compare the text (one line per line of text, [p.N] marks pages) instead of the rendering";
+"pdf.text.identical"   = "No differences in the text (%d lines)";
+"pdf.text.summary"     = "text: %d lines changed, %d added, %d removed";
+"pdf.text.same"        = "the text is identical — only the rendering differs (fonts, images, layout)";
+"pdf.text.hint"        = "the text differs in %d lines — mrdiff --text shows them";
+"pdf.text.none"        = "no text to compare (scanned pages?)";
+"error.pdf_no_text"    = "no text in one of the PDFs (scanned pages?) — compare without --text";
+"error.text_flag"      = "--text applies to PDFs";

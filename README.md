@@ -92,6 +92,7 @@ issue stays readable to whoever answers it.
 mrdiff a.txt b.txt                    # text
 mrdiff a.png b.png                    # image — summary, not a picture
 mrdiff a.pdf b.pdf                    # PDF — which pages, where on the page (mm)
+mrdiff --text a.pdf b.pdf             # PDF — which lines of text changed
 mrdiff a.bin b.bin                    # binary — summary
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # clipboard vs file
@@ -190,8 +191,25 @@ Pages are paired by number; when the counts differ, the extra pages are listed
 but not compared. A page whose paper size differs is reported as such and not
 compared further, like an image of a different size. Pages are rendered at
 72 dpi (one point per pixel), on white — so `--ignore-alpha` has nothing to
-apply to and is refused. `--tolerance` works as for images. This is visual
-comparison only: a changed word is found as a changed region, not quoted.
+apply to and is refused. `--tolerance` works as for images.
+
+The text is compared as well, and reported separately — a re-exported proof
+whose fonts changed and a contract whose clause changed are different events:
+
+```
+  the text is identical — only the rendering differs (fonts, images, layout)
+```
+```
+  the text differs in 3 lines — mrdiff --text shows them
+```
+
+`--text` shows that diff instead of the rendering: one line per line of text as
+PDFKit extracts it, `[p.N]` marking each page, with the same character-level
+highlight as any text diff. Annotations (a reviewer's FreeText note, a comment)
+and form-field values are included as `[FreeText] …` lines — they are wording
+too, and they are invisible to a byte comparison. A PDF with no text (scanned
+pages) says so and is compared visually only. The order of lines is PDFKit's;
+some export tools scramble it, and then the visual answer is the one to trust.
 
 ### URLs and the clipboard
 
@@ -336,9 +354,10 @@ and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
 | image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict. `tone_shift` is the mean signed difference B − A per channel — a photo that is "44% different" because it was exported brighter shows up here as `[21.3, 18.6, 17.7]` |
-| pdf | `pages_a`, `pages_b`, `dpi`, and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
+| pdf | `pages_a`, `pages_b`, `dpi`, `text` (`{result, changed, added, removed, lines_a, lines_b}`, or null when a side has no text), and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
 | site / tree / dir / archive | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]`. `dir` and `archive` name their sides `only_a` / `only_b` where `tree` says `only_local` / `only_remote` |
+| pdf-text (`--text`) | the `text` keys, counted in lines of extracted text |
 | docx | the `text` keys counted in paragraphs, plus `paragraphs_a`, `paragraphs_b`, `other_parts_changed` — `result` is `differ` when only the other parts differ |
 | font | `name_a/b`, `version_a/b` (null when the font has none), `characters_a/b`, `compared`, `changed`, `changed_codepoints: [int]`, `only_a: [int]`, `only_b: [int]` (codepoints, decimal), `cell` |
 | any | `redirected: [{from, to}]` when a URL was redirected |

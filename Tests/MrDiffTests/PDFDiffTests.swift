@@ -1,5 +1,7 @@
 import XCTest
 import CoreGraphics
+import CoreText
+import PDFKit
 @testable import MrDiffCore
 
 /// PDF はここで作る（フィクスチャを置かない）。**CoreGraphics で描いた PDF を PDFKit で
@@ -120,6 +122,59 @@ final class PDFDiffTests: XCTestCase {
 
     func test_PDFでないものは投げる() {
         XCTAssertThrowsError(try comparePDFs(Data("hello".utf8), Data("hello".utf8)))
+    }
+
+    // MARK: - 文字
+
+    /// 文字を描いた PDF。CoreText で 1 行ずつ置く（座標は紙の下から）。
+    private func textPDF(_ lines: [String], annotation: String? = nil) -> Data {
+        let data = pdf(pages: [(a4, { ctx in
+            var y: CGFloat = 780
+            for line in lines {
+                let attr = NSAttributedString(string: line, attributes: [
+                    .font: CTFontCreateWithName("Helvetica" as CFString, 14, nil)])
+                let ct = CTLineCreateWithAttributedString(attr)
+                ctx.textPosition = CGPoint(x: 72, y: y)
+                CTLineDraw(ct, ctx)
+                y -= 24
+            }
+        })])
+        guard let annotation else { return data }
+        // 注釈は PDFKit で足す（CoreGraphics には注釈が無い）。
+        let doc = PDFDocument(data: data)!
+        let page = doc.page(at: 0)!
+        let a = PDFAnnotation(bounds: CGRect(x: 100, y: 100, width: 120, height: 30), forType: .freeText, withProperties: nil)
+        a.contents = annotation
+        page.addAnnotation(a)
+        return doc.dataRepresentation()!
+    }
+
+    func test_文字をページごとの行として抜く_境にページ番号() throws {
+        let lines = try XCTUnwrap(PDFText.lines(in: textPDF(["Article 1  Delivery by 31 October.", "Article 2  Payment monthly."])))
+        XCTAssertEqual(lines.first, "[p.1]")
+        XCTAssertEqual(lines.count, 3)
+        XCTAssertTrue(lines[1].hasPrefix("Article 1"))
+    }
+
+    func test_文言の違いは行diffで出る() throws {
+        let a = textPDF(["Article 1  Delivery by 31 October.", "Article 2  Payment monthly."])
+        let b = textPDF(["Article 1  Delivery by 30 November.", "Article 2  Payment monthly."])
+        let d = compareText(try XCTUnwrap(PDFText.text(in: a)), try XCTUnwrap(PDFText.text(in: b)))
+        XCTAssertEqual(d.changed, 1)
+        XCTAssertEqual(d.added + d.removed, 0)
+    }
+
+    func test_注釈の文言も行になる() throws {
+        let a = textPDF(["Body."], annotation: "check this")
+        let lines = try XCTUnwrap(PDFText.lines(in: a))
+        XCTAssertTrue(lines.contains("[FreeText] check this"), "\(lines)")
+        let b = textPDF(["Body."])
+        let d = compareText(try XCTUnwrap(PDFText.text(in: a)), try XCTUnwrap(PDFText.text(in: b)))
+        XCTAssertEqual(d.removed, 1)
+    }
+
+    func test_文字の無いPDFはnil() throws {
+        XCTAssertNil(PDFText.lines(in: pdf(pages: [(a4, one)])), "矩形だけ ── スキャンと同じ扱い")
     }
 
     // MARK: - JSON
