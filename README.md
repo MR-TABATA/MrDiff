@@ -384,10 +384,20 @@ the same as a 1 GB file that is identical.
 | ---: | ---: | ---: | ---: |
 | 1 GB (binary) | 5 bytes | **4.26 s** | 0.51 s |
 | 1 GB (binary) | none, warm cache | 0.12 s | 0.11 s |
+| 780 MB log, 10,000,000 lines | 2 lines, warm cache | **0.70 s** | 0.68 s |
+| 780 MB log, 10,000,000 lines | none, warm cache | 0.67 s | 0.65 s |
 
-*(Measured on an M4 Max, 2026-09-11, release build. The first row is a cold
-read of two 1 GB files; the second is the same file twice, already in the page
-cache — it is here to show that the work is in the I/O, not in the compare.)*
+*(Measured on an M4 Max, release build; binary rows 2026-09-11, log rows
+2026-09-13. The first row is a cold read of two 1 GB files; the others are
+already in the page cache — the binary pair to show that the work is in the
+I/O, not in the compare, and the log pair to show that a text diff of ten
+million lines is a sub-second job once the bytes are in memory. Cold, add the
+read: about 4 s per GB on this machine.)*
+
+The log is read with `mmap`, so a file larger than memory still works; nothing
+is copied into a buffer just to be compared, and nothing is sent anywhere —
+a confidential log, a proof, a screenshot never leaves the machine unless you
+hand mrdiff a URL.
 
 ## License
 
