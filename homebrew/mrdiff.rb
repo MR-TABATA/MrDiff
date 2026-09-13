@@ -10,9 +10,9 @@
 class Mrdiff < Formula
   desc "Do they differ, and where — images, PDFs, Word, fonts, archives, folders, URLs, sites, SSH, and text"
   homepage "https://mr-tabata.github.io/MrDiff/"
-  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.4.0/mrdiff-0.4.0-macos.zip"
-  sha256 "76c8fa938ff980d9b51b953d59629bb14c3818316412a4b5949ee66ef4837799"
-  version "0.4.0"
+  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.5.0/mrdiff-0.5.0-macos.zip"
+  sha256 "c7c9981a1135c83909e4b4c9eee0e601005b551ed95fd9aa9c4d8e3eba0f1b09"
+  version "0.5.0"
   license "MIT"
 
   depends_on :macos => :ventura # Package.swift の platforms（.v13）と同じ
