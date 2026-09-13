@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrDiff — リリース履歴</title>
-  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.4.0 まで。">
+  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.5.0 まで。">
 
   <meta property="og:title" content="MrDiff — リリース履歴">
-  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.4.0 まで。">
+  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.5.0 まで。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.ja.html">
   <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
@@ -61,18 +61,22 @@
   <header class="rel-head">
     <div class="wrap">
       <div class="kicker">リリース履歴</div>
-      <h1>6 つのリリース。増えた入力は 5 つ。</h1>
-      <p class="lead">2026 年 9 月 12 日の最初のリリースから、翌日の v0.4.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つ、アーカイブ、Word 文書、フォントも比べるようになった。</p>
+      <h1>2 日で 7 つのリリース。</h1>
+      <p class="lead">2026 年 9 月 12 日の最初のリリースから、翌日の v0.5.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つ、アーカイブ、Word 文書、フォント、そして PDF の文字も比べるようになった。</p>
     </div>
   </header>
 
   <div class="wrap">
     <section class="rel-era">
       <div class="rel-era-head">
-        <h2>新しい順</h2><span class="span">v0.4.0 ← v0.1.0 · 2026 年 9 月 13 – 12 日</span>
+        <h2>新しい順</h2><span class="span">v0.5.0 ← v0.1.0 · 2026 年 9 月 13 – 12 日</span>
         <p>CLI は無料で MIT。各リリースは universal binary（Apple silicon + Intel）の zip で、Homebrew の tap はそれを指す。</p>
       </div>
 
+      <div class="rel-row m">
+        <span class="v">0.5.0</span><span class="d">9/13</span>
+        <span class="t"><strong>PDF の文字。</strong>見た目と並べて文字も比べ、別に言う ──「文字は同じ、違うのは見た目だけ」と「文字が 3 行違う」。<code>--text</code> で行 diff が出る。注釈とフォームの値も含む。LP の主題を「クラウドに上げない。手元で、速い」に</span>
+      </div>
       <div class="rel-row m">
         <span class="v">0.4.0</span><span class="d">9/13</span>
         <span class="t"><strong>アーカイブ・Word 文書・フォント。</strong>zip なら何でも（docx・xlsx・pptx・EPUB・Sketch）目次からフォルダとして比べる。Word の本文は段落ごとの行 diff。フォント（OTF・TTF・TTC）は字形ごとに描いて画素で比べる。<code>--json</code> に <code>archive</code>・<code>docx</code>・<code>font</code> が増えた</span>
@@ -104,7 +108,7 @@
       <ul>
           <li>日付は GitHub の Release の日付（JST）。版は <code>--version</code> とタグのもの。</li>
           <li>ここにある全リリースに配布物の zip がある。タグだけのものは無い。</li>
-          <li>JSON の形は v0.1.0 から固定。v0.2.0 で <code>pdf</code>、v0.3.0 で <code>dir</code>、v0.4.0 で <code>archive</code>・<code>docx</code>・<code>font</code> という kind が増えただけで、既存のものは変えていない。</li>
+          <li>JSON の形は v0.1.0 から固定。v0.2.0 で <code>pdf</code>、v0.3.0 で <code>dir</code>、v0.4.0 で <code>archive</code>・<code>docx</code>・<code>font</code>、v0.5.0 で <code>pdf</code> の中の <code>text</code> と <code>pdf-text</code> が増えただけで、既存のものは変えていない。</li>
       </ul>
     </aside>
   </div>
