@@ -8,11 +8,11 @@
 # ビルド済みバイナリを入れる形（ソースから swift build しない）。
 # 数秒で入り、Xcode も要らず、ダウンロード数が Release のアセットに乗る。
 class Mrdiff < Formula
-  desc "Do they differ, and where — images, PDFs, binaries, URLs, sites, SSH, and text"
+  desc "Do they differ, and where — images, PDFs, binaries, folders, URLs, sites, SSH, and text"
   homepage "https://mr-tabata.github.io/MrDiff/"
-  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.2.0/mrdiff-0.2.0-macos.zip"
-  sha256 "8725f25221c76b2c1df2bf926f8246fa351a3b5cb0ac2217864c0555bc886692"
-  version "0.2.0"
+  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.3.0/mrdiff-0.3.0-macos.zip"
+  sha256 "bad277b76c18d74f2989634069df788dccdb9498de801f3401d46a7b55a03beb"
+  version "0.3.0"
   license "MIT"
 
   depends_on :macos => :ventura # Package.swift の platforms（.v13）と同じ
