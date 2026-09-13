@@ -106,7 +106,7 @@ mrdiff Font-1.otf Font-2.otf          # fonts — which glyphs render differentl
 
 mrdiff --help                         # every option, one line each
 mrdiff --help --lang=ja               # the same in Japanese
-mrdiff --version                      # mrdiff 0.4.0
+mrdiff --version                      # mrdiff 0.5.0
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --json a.bin b.bin             # machine readable
 
@@ -346,7 +346,7 @@ Nothing is filtered — `.DS_Store` counts, as it does for `diff -r`.
 ### JSON
 
 `--json` prints one line of JSON and nothing else. It is never translated,
-and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `archive` / `docx` / `font` in v0.4.0):
+and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `archive` / `docx` / `font` in v0.4.0, `pdf.text` and `pdf-text` in v0.5.0):
 
 | key | |
 | :--- | :--- |
