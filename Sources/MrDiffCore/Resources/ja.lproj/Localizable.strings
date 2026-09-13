@@ -88,7 +88,7 @@
 
 /* --help。スイッチごとに 1 行。 */
 "help.usage"           = "使い方: mrdiff [オプション] <a> <b>\n        mrdiff [オプション] <フォルダA> <フォルダB>\n        mrdiff --clipboard <b>\n        mrdiff --site <https://base> <dir>\n        mrdiff --ssh <dir> <host:path>";
-"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイルか http(s) の URL。\n何として比べるか（テキスト・画像・PDF・バイナリ）は名前ではなく中身で決めます。フォルダ 2 つなら、どのファイルが違うか・片側にしか無いかを言います。絵は出しません。";
+"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイルか http(s) の URL。\n何として比べるか（テキスト・画像・PDF・アーカイブ（zip / docx / xlsx / pptx / epub…）・フォント・バイナリ）は\n名前ではなく中身で決めます。フォルダ 2 つなら、どのファイルが違うか・片側にしか無いかを言います。絵は出しません。";
 "help.exit_code"       = "違えば 1 で終わる（既定はどちらでも 0。実行できなければ 2）";
 "help.json"            = "1 行の JSON で出す。訳さない";
 "help.tolerance"       = "画像・PDF：チャンネルごとに ±N までは同じとみなす（既定 0 ＝ 完全一致）";
@@ -113,3 +113,24 @@
 "dir.summary"          = "違う %d／A だけ %d／B だけ %d";
 "error.mixed_dir"      = "フォルダとファイルは比べられません";
 "error.dir_flag"       = "--tolerance と --ignore-alpha は画像と PDF のもので、フォルダには効きません（ファイル 2 つを直接比べてください）";
+
+/* zip の中身、Word の本文、フォント。 */
+"archive.in_sync"      = "違いはありません ── 中の %d 個が一致";
+"archive.summary"      = "違う %d／A だけ %d／B だけ %d（アーカイブの中）";
+"error.mixed_zip"      = "アーカイブとアーカイブでないものは比べられません";
+"error.bad_zip"        = "アーカイブを読めません（壊れているか、zip64）";
+"error.pixel_flag"     = "--tolerance と --ignore-alpha は画像と PDF にだけ効きます";
+"docx.identical"       = "本文に違いはありません（%d 段落）";
+"docx.summary"         = "段落 %d 変更、%d 追加、%d 削除";
+"docx.others"          = "本文以外の部品が %d 個違います（書式・画像・プロパティ）── 上は本文の差だけ";
+"font.identical"       = "違いはありません ── %d 字の字形が同じ";
+"font.same_glyphs"     = "両方が持つ %d 字の字形は同じ";
+"font.differ"          = "%2$d 字中 %1$d 字の字形が違います";
+"font.first"           = "最初: %@";
+"font.only_a"          = "A だけ: %d 字（最初 %@）";
+"font.only_b"          = "B だけ: %d 字（最初 %@）";
+"font.name"            = "名前: %@ → %@";
+"font.version"         = "版: %@ → %@";
+"font.rendered"        = "1 字ずつ %d px の枠に描いて、画素で比べました";
+"error.not_a_font"     = "CoreText で開けるフォント（OTF・TTF・TTC）ではありません";
+"error.mixed_font"     = "フォントとフォントでないものは比べられません";

@@ -58,6 +58,9 @@ a different output for each.
 | **A site vs its source** | check whether a deployed site matches the git-tracked folder it was built from |
 | **A local dir vs a server** | over SSH, both ways — including files left on the server that are not in your local copy |
 | **Two folders** | which files differ, and which exist on one side only |
+| **Archives** (zip, xlsx, pptx, EPUB, Sketch…) | which files inside differ, without unpacking |
+| **Word documents** | which paragraphs changed, as a line diff of the text |
+| **Fonts** (OTF, TTF, TTC) | which glyphs render differently, and which characters were added or removed |
 
 ## Install
 
@@ -96,10 +99,13 @@ mrdiff --site https://example.com ./site   # is the live site in sync with ./sit
 mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
 mrdiff old/ new/                      # two folders — which files differ
+mrdiff v1.docx v2.docx                # Word — which paragraphs changed
+mrdiff a.xlsx b.xlsx                  # any zip — which files inside changed
+mrdiff Font-1.otf Font-2.otf          # fonts — which glyphs render differently
 
 mrdiff --help                         # every option, one line each
 mrdiff --help --lang=ja               # the same in Japanese
-mrdiff --version                      # mrdiff 0.3.0
+mrdiff --version                      # mrdiff 0.4.0
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --json a.bin b.bin             # machine readable
 
@@ -155,6 +161,11 @@ A lossy re-encode does not collapse to zero at a small tolerance: on the test
 pair above the largest gap is 36, so `--tolerance=2` still leaves half the pixels
 different. Read the gap as a measure of how far the values have spread, not as an
 invitation to set the tolerance to it.
+
+Every format the system's ImageIO decodes is compared this way, not only PNG
+and JPEG: PSD (as the flattened composite), HEIC, AVIF, WebP, TIFF, GIF (first
+frame), and some thirty camera RAW formats. `.ai` files saved with PDF
+compatibility go the PDF route below.
 
 ### PDFs
 
@@ -252,6 +263,52 @@ That last line is the point for anyone maintaining a server: a file sitting in t
 web root that is not in your repo — an old export, a forgotten backup — is exactly
 what you want flagged, and over SSH the remote side can be listed, so it can be.
 
+### Archives, Word documents, fonts
+
+A docx, xlsx, pptx, EPUB or Sketch file is a zip, and so is a jar. Two of them
+are compared as folders — **which files inside differ** — by reading the
+archive's own table of contents (CRC and size per entry), without unpacking:
+
+```
+$ mrdiff deck-v1.pptx deck-v2.pptx
+changed   ppt/slides/slide3.xml
+only in B   ppt/media/image7.png
+1 changed, 0 only in A, 1 only in B (inside the archive)
+```
+
+**Word documents** go one step further. When both archives hold a Word body
+(`word/document.xml`), the text of each paragraph is pulled out and the two are
+compared as a line diff — one paragraph per line, with the character-level
+highlight — so a contract or a spec answers "which clause changed":
+
+```
+$ mrdiff contract-v1.docx contract-v2.docx
+paragraphs: 1 changed, 1 added, 0 removed
+  1 other parts differ (formatting, media, properties) — the text above is what changed in the body
+    1       - Article 1  Delivery by 31 October 2026.
+          1 + Article 1  Delivery by 30 November 2026.
+```
+
+Formatting, tables' borders, images and tracked-change markup are not compared;
+text inside a table cell appears as its own paragraph. xlsx and pptx get the
+archive listing only — their text lives in shared strings and slide XML, which
+this version does not pull apart.
+
+**Fonts** (OTF, TTF, TTC) are compared glyph by glyph: every character both
+fonts have is drawn into the same 48-pixel cell and the cells are compared pixel
+by pixel; characters only one font has are listed as added or removed.
+
+```
+$ mrdiff Mincho-1.002.otf Mincho-1.003.otf
+Fonts differ — 12 of 6,842 glyphs render differently
+  first: あ U+3042
+  only in B: 3 characters (first ① U+2460)
+  version: 1.002 → 1.003
+  each glyph rendered in a 48 px cell and compared pixel by pixel
+```
+
+WOFF is not read (CoreText does not open it directly); convert to OTF first.
+
 ### Two folders
 
 ```
@@ -271,17 +328,19 @@ Nothing is filtered — `.DS_Store` counts, as it does for `diff -r`.
 ### JSON
 
 `--json` prints one line of JSON and nothing else. It is never translated,
-and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0):
+and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `archive` / `docx` / `font` in v0.4.0):
 
 | key | |
 | :--- | :--- |
-| `kind` | what it was compared as: `text`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`), `dir` (two folders) |
+| `kind` | what it was compared as: `text`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`), `dir` (two folders), `archive` (two zips), `docx`, `font` |
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
 | image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict. `tone_shift` is the mean signed difference B − A per channel — a photo that is "44% different" because it was exported brighter shows up here as `[21.3, 18.6, 17.7]` |
 | pdf | `pages_a`, `pages_b`, `dpi`, and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
-| site / tree / dir | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]`. `dir` names its sides `only_a` / `only_b` where `tree` says `only_local` / `only_remote` |
+| site / tree / dir / archive | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]`. `dir` and `archive` name their sides `only_a` / `only_b` where `tree` says `only_local` / `only_remote` |
+| docx | the `text` keys counted in paragraphs, plus `paragraphs_a`, `paragraphs_b`, `other_parts_changed` — `result` is `differ` when only the other parts differ |
+| font | `name_a/b`, `version_a/b` (null when the font has none), `characters_a/b`, `compared`, `changed`, `changed_codepoints: [int]`, `only_a: [int]`, `only_b: [int]` (codepoints, decimal), `cell` |
 | any | `redirected: [{from, to}]` when a URL was redirected |
 
 ```

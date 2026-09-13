@@ -367,6 +367,90 @@ if pdfA {
     exit(wantsExitCode ? 1 : 0)
 }
 
+// **zip は中身をフォルダとして比べる。** docx / xlsx / pptx / EPUB / Sketch は拡張子が
+// 違うだけで中は zip なので、「中のどのファイルが変わったか」がそのまま答えになる。
+// 両方に Word の本文があれば、そこは段落の行 diff にする ―― 契約書・仕様書の版比較で
+// 知りたいのは「どの段落の文言が」で、XML の差分ではない。
+let zipA = ZipArchive.looksLikeZip(dataA), zipB = ZipArchive.looksLikeZip(dataB)
+if zipA != zipB { die(t("error.mixed_zip")) }
+if zipA {
+    if tolerance > 0 || ignoreAlpha { die(t("error.pixel_flag")) }
+    guard let za = ZipArchive(data: dataA), let zb = ZipArchive(data: dataB) else { die(t("error.bad_zip")) }
+    let fa = za.fingerprints, fb = zb.fingerprints
+    let parts = TreeDiff.compare(leftPaths: fa.keys.sorted(), rightPaths: fb.keys.sorted(),
+                                 leftHash: { fa[$0] }, rightHash: { fb[$0] })
+
+    if let ta = DocxText.text(in: za), let tb = DocxText.text(in: zb) {
+        // Word。本文は段落で比べ、本文以外（書式・画像・プロパティ）は数だけ言う。
+        let d = compareText(TextSource(data: Data(ta.utf8)), TextSource(data: Data(tb.utf8)))
+        let others = parts.rows.filter { $0.status != .identical && $0.path != DocxText.bodyPath }.count
+        if wantsJSON {
+            print(JSONOutput.encode(JSONOutput.docx(d, otherPartsChanged: others, redirects: redirectsJSON)))
+        } else if d.isIdentical {
+            print(t("docx.identical", d.left.lines.count))
+            if others > 0 { print("  " + t("docx.others", others)) }
+            printRedirects()
+        } else {
+            let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
+            var out = Out(to: sink ?? stdout)
+            out.line(t("docx.summary", d.changed, d.added, d.removed))
+            if others > 0 { out.line("  " + t("docx.others", others)) }
+            for line in redirects { out.line("  " + line) }
+            renderText(d, style: Style(on: useColor), into: &out)
+            out.flush()
+            Pager.finish()
+        }
+        let same = d.isIdentical && others == 0
+        exit(same ? 0 : (wantsExitCode ? 1 : 0))
+    }
+
+    if wantsJSON {
+        print(JSONOutput.encode(JSONOutput.archive(parts, redirects: redirectsJSON)))
+    } else {
+        for r in parts.changed   { print(t("dir.changed", r.path)) }
+        for r in parts.onlyLeft  { print(t("dir.only_a", r.path)) }
+        for r in parts.onlyRight { print(t("dir.only_b", r.path)) }
+        if parts.allIdentical {
+            print(t("archive.in_sync", parts.identical.count))
+        } else {
+            print(t("archive.summary", parts.changed.count, parts.onlyLeft.count, parts.onlyRight.count))
+        }
+        printRedirects()
+    }
+    exit(parts.allIdentical ? 0 : (wantsExitCode ? 1 : 0))
+}
+
+// **フォントは文字ごとに字形を描いて比べる。** バイトではテーブルを書き出し直しただけで
+// 全部違う。両方が持つ文字を同じ枠に描いて突き合わせ、片方にしか無い文字は増減として言う。
+let fontA = looksLikeFont(dataA), fontB = looksLikeFont(dataB)
+if fontA != fontB { die(t("error.mixed_font")) }
+if fontA {
+    if tolerance > 0 || ignoreAlpha { die(t("error.pixel_flag")) }
+    let r: FontComparison
+    do { r = try compareFonts(dataA, dataB) } catch { die("\(error)") }
+    if wantsJSON {
+        print(JSONOutput.encode(JSONOutput.font(r, redirects: redirectsJSON)))
+        exit(r.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+    }
+    if r.isIdentical {
+        print(t("font.identical", r.compared))
+    } else {
+        if r.changed.isEmpty {
+            print(t("font.same_glyphs", r.compared))
+        } else {
+            print(t("font.differ", r.changed.count, r.compared))
+            print("  " + t("font.first", describeCodepoint(r.changed[0])))
+        }
+        if !r.onlyA.isEmpty { print("  " + t("font.only_a", r.onlyA.count, describeCodepoint(r.onlyA[0]))) }
+        if !r.onlyB.isEmpty { print("  " + t("font.only_b", r.onlyB.count, describeCodepoint(r.onlyB[0]))) }
+    }
+    if r.nameA != r.nameB { print("  " + t("font.name", r.nameA, r.nameB)) }
+    if let va = r.versionA, let vb = r.versionB, va != vb { print("  " + t("font.version", va, vb)) }
+    printRedirects()
+    print("  " + t("font.rendered", r.cell))
+    exit(r.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+}
+
 // テキストでないものは、**画像として読めるかどうか**でさらに分ける。拡張子は見ない。
 // 片方だけ画像なら比べない（画素と生バイトも突き合わせられない）。
 let imageA = looksLikeImage(dataA), imageB = looksLikeImage(dataB)

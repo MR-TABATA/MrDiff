@@ -20,7 +20,9 @@ final class JSONOutputTests: XCTestCase {
         let site = JSONOutput.site(SiteDiff(rows: []))
         let tree = JSONOutput.tree(TreeDiff(rows: []))
         let dir = JSONOutput.dir(TreeDiff(rows: []))
-        for (o, kind) in [(text, "text"), (image, "image"), (binary, "binary"), (site, "site"), (tree, "tree"), (dir, "dir")] {
+        let archive = JSONOutput.archive(TreeDiff(rows: []))
+        let docx = JSONOutput.docx(compareText("a\n", "a\n"), otherPartsChanged: 0)
+        for (o, kind) in [(text, "text"), (image, "image"), (binary, "binary"), (site, "site"), (tree, "tree"), (dir, "dir"), (archive, "archive"), (docx, "docx")] {
             XCTAssertEqual(o["kind"] as? String, kind)
             XCTAssertEqual(o["result"] as? String, "identical", kind)
         }
@@ -144,6 +146,14 @@ final class JSONOutputTests: XCTestCase {
         ])
         let s = JSONOutput.encode(JSONOutput.dir(d))
         XCTAssertEqual(s, #"{"changed":1,"files":4,"in_sync":false,"kind":"dir","only_a":1,"only_b":1,"result":"differ","rows":[{"path":"ch/same.pdf","status":"identical"},{"path":"ch/chapter-02.pdf","status":"changed"},{"path":"appendix.md","status":"only_a"},{"path":"chapter-07.md","status":"only_b"}]}"#)
+    }
+
+    /// 本文が同じでも、本文以外の部品が違えば differ。「同じ」とだけ言うと嘘になる。
+    func testDocxOtherPartsMakeItDiffer() {
+        let same = JSONOutput.docx(compareText("a\n", "a\n"), otherPartsChanged: 2)
+        XCTAssertEqual(same["result"] as? String, "differ")
+        XCTAssertEqual(same["other_parts_changed"] as? Int, 2)
+        XCTAssertEqual(same["paragraphs_a"] as? Int, 1)
     }
 
     // MARK: - 穴

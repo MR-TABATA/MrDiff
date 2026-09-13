@@ -88,7 +88,7 @@
 
 /* --help。スイッチごとに 1 行。 */
 "help.usage"           = "usage: mrdiff [options] <a> <b>\n       mrdiff [options] <dirA> <dirB>\n       mrdiff --clipboard <b>\n       mrdiff --site <https://base> <dir>\n       mrdiff --ssh <dir> <host:path>";
-"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files or\nhttp(s) URLs; what they are is decided from the content, not the name — text, image,\nPDF or binary. Two folders: which files differ, or exist on one side only. Nothing is rendered.";
+"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files or\nhttp(s) URLs; what they are is decided from the content, not the name — text, image,\nPDF, archive (zip, docx, xlsx, pptx, epub…), font or binary. Two folders: which files differ, or exist\non one side only. Nothing is rendered.";
 "help.exit_code"       = "exit 1 when they differ (default: 0 either way; 2 when it could not run)";
 "help.json"            = "one line of JSON, never translated";
 "help.tolerance"       = "images/PDFs: treat per-channel gaps up to N as the same (default 0 = exact)";
@@ -113,3 +113,24 @@
 "dir.summary"          = "%d changed, %d only in A, %d only in B";
 "error.mixed_dir"      = "cannot compare a folder with a file";
 "error.dir_flag"       = "--tolerance and --ignore-alpha apply to images and PDFs, not folders (compare the two files directly)";
+
+/* zip の中身、Word の本文、フォント。 */
+"archive.in_sync"      = "No differences — %d files inside match";
+"archive.summary"      = "%d changed, %d only in A, %d only in B (inside the archive)";
+"error.mixed_zip"      = "cannot compare an archive with a non-archive file";
+"error.bad_zip"        = "cannot read the archive (damaged, or zip64)";
+"error.pixel_flag"     = "--tolerance and --ignore-alpha apply to images and PDFs only";
+"docx.identical"       = "No differences in the text (%d paragraphs)";
+"docx.summary"         = "paragraphs: %d changed, %d added, %d removed";
+"docx.others"          = "%d other parts differ (formatting, media, properties) — the text above is what changed in the body";
+"font.identical"       = "No differences — %d glyphs render the same";
+"font.same_glyphs"     = "the %d glyphs both fonts have render the same";
+"font.differ"          = "Fonts differ — %d of %d glyphs render differently";
+"font.first"           = "first: %@";
+"font.only_a"          = "only in A: %d characters (first %@)";
+"font.only_b"          = "only in B: %d characters (first %@)";
+"font.name"            = "name: %@ → %@";
+"font.version"         = "version: %@ → %@";
+"font.rendered"        = "each glyph rendered in a %d px cell and compared pixel by pixel";
+"error.not_a_font"     = "not a font CoreText can open (OTF, TTF, TTC)";
+"error.mixed_font"     = "cannot compare a font with a non-font file";

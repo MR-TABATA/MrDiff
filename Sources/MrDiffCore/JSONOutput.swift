@@ -158,6 +158,47 @@ public enum JSONOutput {
         ]
     }
 
+    /// zip の中身。形は `dir` と同じ（パスは zip の中のパス）。
+    public static func archive(_ d: TreeDiff, redirects: [Redirect] = []) -> [String: Any] {
+        var o = dir(d)
+        o["kind"] = "archive"
+        addRedirects(&o, redirects)
+        return o
+    }
+
+    /// Word の本文。`text` と同じ数え方で、単位は段落。本文以外の部品の増減は数だけ。
+    public static func docx(_ d: TextDiff, otherPartsChanged: Int, redirects: [Redirect] = []) -> [String: Any] {
+        var o = text(d, redirects: redirects)
+        o["kind"] = "docx"
+        o["paragraphs_a"] = d.left.lines.count
+        o["paragraphs_b"] = d.right.lines.count
+        o["other_parts_changed"] = otherPartsChanged
+        if otherPartsChanged > 0 && d.isIdentical { o["result"] = "differ" }
+        return o
+    }
+
+#if canImport(CoreText)
+    /// フォント。文字はコードポイント（10 進）で並べる。
+    public static func font(_ r: FontComparison, redirects: [Redirect] = []) -> [String: Any] {
+        var o: [String: Any] = ["kind": "font"]
+        o["result"] = r.isIdentical ? "identical" : "differ"
+        o["name_a"] = r.nameA
+        o["name_b"] = r.nameB
+        o["version_a"] = r.versionA ?? NSNull()
+        o["version_b"] = r.versionB ?? NSNull()
+        o["characters_a"] = r.charactersA
+        o["characters_b"] = r.charactersB
+        o["compared"] = r.compared
+        o["changed"] = r.changed.count
+        o["changed_codepoints"] = r.changed.map { Int($0) }
+        o["only_a"] = r.onlyA.map { Int($0) }
+        o["only_b"] = r.onlyB.map { Int($0) }
+        o["cell"] = r.cell
+        addRedirects(&o, redirects)
+        return o
+    }
+#endif
+
     /// 手元のフォルダ同士。形は `tree` と同じで、名前だけ `a` / `b`
     /// （`only_local` / `only_remote` は手元同士では嘘になる。片方をリモートと呼べない）。
     public static func dir(_ d: TreeDiff) -> [String: Any] {

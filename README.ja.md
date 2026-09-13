@@ -57,6 +57,9 @@ MrDiff はそれに取って代わろうとしない。MrDiff が足すのは、
 | **サイトとその元** | 公開中のサイトが、元になった git 管理下のフォルダと合っているか |
 | **手元のディレクトリとサーバ** | SSH 越しに両方向 ── 手元に無くサーバに残っているファイルも |
 | **フォルダ 2 つ** | どのファイルが違うか、片側にしか無いか |
+| **アーカイブ**（zip、xlsx、pptx、EPUB、Sketch…） | 展開せずに、中のどのファイルが違うか |
+| **Word 文書** | どの段落が変わったか。本文の行 diff |
+| **フォント**（OTF、TTF、TTC） | どの字形が違うか、どの文字が増減したか |
 
 ## インストール
 
@@ -94,10 +97,13 @@ mrdiff --site https://example.com ./site   # 公開中のサイトは ./site と
 mrdiff local.conf host:/etc/app.conf       # ssh 越しのファイル 1 つ
 mrdiff --ssh ./site host:/var/www          # ssh 越しのツリー全体、両方向
 mrdiff old/ new/                      # フォルダ 2 つ ── どのファイルが違うか
+mrdiff v1.docx v2.docx                # Word ── どの段落が変わったか
+mrdiff a.xlsx b.xlsx                  # zip なら何でも ── 中のどのファイルが違うか
+mrdiff Font-1.otf Font-2.otf          # フォント ── どの字形が違うか
 
 mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
-mrdiff --version                      # mrdiff 0.3.0
+mrdiff --version                      # mrdiff 0.4.0
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
 mrdiff --json a.bin b.bin             # 機械向け
 
@@ -149,6 +155,10 @@ First difference at (0, 0)
 非可逆の再エンコードは、小さな tolerance では 0 にならない。上の組では最大の差が 36
 なので、`--tolerance=2` でも画素の半分は違ったまま。この数は「値がどれだけ散ったか」の
 物差しであって、そこまで緩めよという勧めではない。
+
+OS の ImageIO が読む形式は全部この方法で比べる。PNG と JPEG だけではない：PSD（統合画像
+として）、HEIC、AVIF、WebP、TIFF、GIF（1 コマ目）、それにカメラの RAW 約 30 種類。PDF 互換で
+保存した `.ai` は下の PDF の道を通る。
 
 ### PDF
 
@@ -240,6 +250,49 @@ only on remote (left over?)   backups/customers.sql     ← 手元に無い
 無いファイル ── 古い書き出し、忘れられたバックアップ ── こそ印を付けたいもので、SSH
 なら向こう側を列挙できるので、付けられる。
 
+### アーカイブ、Word 文書、フォント
+
+docx / xlsx / pptx / EPUB / Sketch は zip で、jar もそう。2 つを渡すとフォルダとして比べる ──
+**中のどのファイルが違うか**。アーカイブ自身が持つ目次（項目ごとの CRC と長さ）を読むだけで、
+展開はしない：
+
+```
+$ mrdiff deck-v1.pptx deck-v2.pptx
+changed   ppt/slides/slide3.xml
+only in B   ppt/media/image7.png
+1 changed, 0 only in A, 1 only in B (inside the archive)
+```
+
+**Word 文書**はもう 1 段進む。両方に Word の本文（`word/document.xml`）があれば、段落ごとの
+文字を抜き出して行 diff に掛ける ── 1 段落 1 行、文字単位のハイライトつき。契約書や仕様書で
+「どの条項が変わったか」に答える：
+
+```
+$ mrdiff contract-v1.docx contract-v2.docx
+paragraphs: 1 changed, 1 added, 0 removed
+  1 other parts differ (formatting, media, properties) — the text above is what changed in the body
+    1       - 第1条 納期を 2026年10月31日 とする。
+          1 + 第1条 納期を 2026年11月30日 とする。
+```
+
+書式・表の罫線・画像・変更履歴の印は比べない。表のセルの文字は、それぞれ 1 段落として出る。
+xlsx と pptx はアーカイブの一覧まで ── 文字が共有文字列やスライドの XML に散っていて、
+この版では分解しない。
+
+**フォント**（OTF、TTF、TTC）は字形ごとに比べる。両方が持つ文字を 1 つずつ同じ 48 px の枠に
+描いて、画素で突き合わせる。片方にしか無い文字は増減として言う。
+
+```
+$ mrdiff Mincho-1.002.otf Mincho-1.003.otf
+Fonts differ — 12 of 6,842 glyphs render differently
+  first: あ U+3042
+  only in B: 3 characters (first ① U+2460)
+  version: 1.002 → 1.003
+  each glyph rendered in a 48 px cell and compared pixel by pixel
+```
+
+WOFF は読まない（CoreText が直接は開かない）。OTF にしてから。
+
 ### フォルダ 2 つ
 
 ```
@@ -258,17 +311,19 @@ only in B   chapter-07.md
 ### JSON
 
 `--json` は 1 行の JSON だけを出す。訳さない。形は v0.1.0 から固定
-（`pdf` は v0.2.0、`dir` は v0.3.0 で追加）：
+（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0 で追加）：
 
 | キー | |
 | :--- | :--- |
-| `kind` | 何として比べたか：`text`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ） |
+| `kind` | 何として比べたか：`text`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ）、`archive`（zip 2 つ）、`docx`、`font` |
 | `result` | `identical` か `differ`。画像は `size_mismatch` も。`--site` は、違いは無いが確認できなかったファイルがあれば `error` |
 | text | `changed`、`added`、`removed`。`changed` は置き換えられた塊を両側の大きいほうで数える ── 1 行消して 2 行足せば `changed: 2` |
 | image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
 | pdf | `pages_a`、`pages_b`、`dpi`、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |
-| site / tree / dir | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]`。`dir` は両側を `only_a` / `only_b` と呼ぶ（`tree` は `only_local` / `only_remote`） |
+| site / tree / dir / archive | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]`。`dir` と `archive` は両側を `only_a` / `only_b` と呼ぶ（`tree` は `only_local` / `only_remote`） |
+| docx | `text` のキーを段落で数えたもの ＋ `paragraphs_a`、`paragraphs_b`、`other_parts_changed`。本文以外だけ違うときも `result` は `differ` |
+| font | `name_a/b`、`version_a/b`（無ければ null）、`characters_a/b`、`compared`、`changed`、`changed_codepoints: [int]`、`only_a: [int]`、`only_b: [int]`（コードポイント、10 進）、`cell` |
 | 共通 | URL が飛ばされたときの `redirected: [{from, to}]` |
 
 ```
