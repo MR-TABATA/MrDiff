@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MrDiff — Release history</title>
+  <meta name="description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.2.0, which added PDFs.">
+
+  <meta property="og:title" content="MrDiff — Release history">
+  <meta property="og:description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.2.0, which added PDFs.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.en.html">
+  <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="canonical" href="https://mr-tabata.github.io/MrDiff/releases.en.html">
+  <link rel="alternate" hreflang="ja" href="https://mr-tabata.github.io/MrDiff/releases.ja.html">
+  <link rel="alternate" hreflang="en" href="https://mr-tabata.github.io/MrDiff/releases.en.html">
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23e8593a'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='9'%3E%3Ccircle cx='40' cy='40' r='19'/%3E%3Ccircle cx='60' cy='60' r='19'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="stylesheet" href="lp.css">
+</head>
+<body>
+  <!-- Inline logo template. Kept out of flow with width/height 0 rather than
+       display:none — a display:none subtree does not resolve the gradient
+       (paint server) the logo tile references. Same glyph as art/icon.svg. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="logoBg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FF9A6B"/>
+        <stop offset="1" stop-color="#B8321E"/>
+      </linearGradient>
+      <radialGradient id="logoGloss" cx="50%" cy="0%" r="80%">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"/>
+        <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <symbol id="logo" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="23" fill="url(#logoBg)"/>
+      <rect width="100" height="100" rx="23" fill="url(#logoGloss)"/>
+      <g fill="none" stroke="#ffffff" stroke-width="8">
+        <circle cx="42" cy="42" r="18"/>
+        <circle cx="58" cy="58" r="18"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <nav>
+    <a class="brand" href="index.en.html"><svg><use href="#logo"/></svg> MrDiff</a>
+    <div class="nav-links">
+      <a href="index.en.html#what">What it answers</a>
+      <a href="index.en.html#honest">What it won't</a>
+      <a href="index.en.html#install">Install</a>
+      <a href="https://github.com/MR-TABATA/MrDiff/releases" target="_blank" rel="noopener">Download</a>
+      <a class="lang-switch" href="releases.ja.html" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </nav>
+
+  <header class="rel-head">
+    <div class="wrap">
+      <div class="kicker">Release history</div>
+      <h1>Four releases. One new kind of file.</h1>
+      <p class="lead">From the first release on 12 September 2026 to v0.2.0 the next day. It shipped comparing text, images and binaries; a day later it compared PDFs and told you where on the page.</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="rel-era">
+      <div class="rel-era-head">
+        <h2>Newest first</h2><span class="span">v0.2.0 ← v0.1.0 · 13 – 12 Sep 2026</span>
+        <p>The CLI is free and MIT. Each release is a universal binary (Apple silicon + Intel) in a zip, and the Homebrew tap points at it.</p>
+      </div>
+
+      <div class="rel-row m">
+        <span class="v">0.2.0</span><span class="d">13 Sep</span>
+        <span class="t"><strong>PDFs.</strong> Each page rendered and compared like an image; the answer says which pages differ and where on the page, in millimetres. Page counts and paper sizes are reported separately. Also <code>--help</code> with one line per option, and <code>--lang=en|ja</code> for a one-run language switch</span>
+      </div>
+      <div class="rel-row">
+        <span class="v">0.1.2</span><span class="d">12 Sep</span>
+        <span class="t"><code>--version</code>, and the release script refuses to build a zip whose version does not match the tag</span>
+      </div>
+      <div class="rel-row">
+        <span class="v">0.1.1</span><span class="d">12 Sep</span>
+        <span class="t">Three more answers for images: a per-pixel mask, the difference grouped into regions, and the overall tone shift (B − A per channel) — so "44% different" can be told apart from "exported 20 brighter"</span>
+      </div>
+      <div class="rel-row m">
+        <span class="v">0.1.0</span><span class="d">12 Sep</span>
+        <span class="t"><strong>First release.</strong> Text, images, binaries, two URLs, the clipboard, a deployed site vs its git-tracked folder (<code>--site</code>), a local directory vs a server over SSH (<code>--ssh</code>). <code>--json</code> and <code>--exit-code</code> from day one. Homebrew tap published the same day</span>
+      </div>
+    </section>
+
+    <aside class="rel-notes">
+      <h3>About this list</h3>
+      <ul>
+          <li>Dates are the GitHub release dates (JST). Version numbers follow <code>--version</code> and the tag.</li>
+          <li>Every release here is published with a downloadable zip; there are no tag-only entries.</li>
+          <li>The JSON shape is fixed from v0.1.0 on. v0.2.0 added the <code>pdf</code> kind; nothing existing changed.</li>
+      </ul>
+    </aside>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <div class="brand"><svg style="width:24px;height:24px;border-radius:6px;"><use href="#logo"/></svg> MrDiff</div>
+      <p>Swift · MIT License</p>
+      <p style="margin-top:8px;">Created by <a href="https://github.com/MR-TABATA" target="_blank" rel="noopener">TABATA Hitoshi</a> · <a href="https://github.com/MR-TABATA/MrDiff" target="_blank" rel="noopener">GitHub</a> · <a href="releases.ja.html" hreflang="ja" lang="ja">日本語</a></p>
+      <p style="margin-top:6px; color:#4a4a4a;">© 2026 TABATA Hitoshi</p>
+    </div>
+  </footer>
+</body>
+</html>

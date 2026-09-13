@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MrDiff — 画像もバイナリも URL も、もちろんテキストも。違うか、どこが、を答える</title>
-  <meta name="description" content="画像・バイナリ・URL・クリップボード・公開中のサイト・SSH 越しのディレクトリ。どれも同じコマンドで、同じ 2 つを答える ── 違うか、どこが。macOS、MIT、無料。">
+  <title>MrDiff — 画像も PDF もバイナリも URL も、もちろんテキストも。違うか、どこが、を答える</title>
+  <meta name="description" content="画像・PDF・バイナリ・URL・クリップボード・公開中のサイト・SSH 越しのディレクトリ。どれも同じコマンドで、同じ 2 つを答える ── 違うか、どこが。macOS、MIT、無料。">
 
   <!-- Open Graph -->
   <meta property="og:title" content="MrDiff">
-  <meta property="og:description" content="画像もバイナリも URL も、もちろんテキストも。違うか、どこが、を答える。公開中のサイトや SSH 越しのディレクトリも同じコマンドで。">
+  <meta property="og:description" content="画像も PDF もバイナリも URL も、もちろんテキストも。違うか、どこが、を答える。公開中のサイトや SSH 越しのディレクトリも同じコマンドで。">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/index.ja.html">
@@ -56,6 +56,7 @@
       <a href="#what">答えること</a>
       <a href="#honest">答えないこと</a>
       <a href="#install">インストール</a>
+      <a href="releases.ja.html">リリース</a>
       <a href="https://github.com/MR-TABATA/MrDiff" target="_blank" rel="noopener">GitHub</a>
       <a class="lang-switch" href="index.en.html" hreflang="en" lang="en">English</a>
     </div>
@@ -65,8 +66,8 @@
   <header class="hero">
     <div class="wrap">
       <svg class="logo"><use href="#logo"/></svg>
-      <h1>画像もバイナリも URL も、<br>もちろんテキストも。<br><span class="accent">違うか、どこが、を答える。</span></h1>
-      <p class="lead">画像・バイナリ・URL・クリップボード・公開中のサイト・SSH 越しのディレクトリ。<strong>どれも同じコマンドで、同じ 2 つを答える ── 違うか、どこが。</strong>ウィンドウは開かない。</p>
+      <h1>画像も PDF もバイナリも URL も、<br>もちろんテキストも。<br><span class="accent">違うか、どこが、を答える。</span></h1>
+      <p class="lead">画像・PDF・バイナリ・URL・クリップボード・公開中のサイト・SSH 越しのディレクトリ。<strong>どれも同じコマンドで、同じ 2 つを答える ── 違うか、どこが。</strong>ウィンドウは開かない。</p>
       <div class="btn-row">
         <a class="btn btn-primary" href="#install">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
@@ -94,6 +95,11 @@
 <span class="out">First difference at (412, 88)</span>
 <span class="out">  largest per-channel gap: 41 — --tolerance=41 would call these the same</span>
 
+<span class="p">$</span> <span class="cmd">mrdiff proof-v1.pdf proof-v2.pdf</span>
+<span class="out">PDFs differ — 1 of 12 pages</span>
+<span class="out">p.7  1 region</span>
+<span class="out">     top 69 mm, left 96 mm, 16 × 5 mm</span>
+
 <span class="p">$</span> <span class="cmd">mrdiff firmware-v1.bin firmware-v2.bin</span>
 <span class="out">Binary files differ — 47 regions, first at 0x1A3F</span>
 <span class="out">  158 of 2,000,000 bytes differ</span>
@@ -104,7 +110,7 @@
 <span class="out">only on remote (left over?)   backups/customers.sql</span>
 <span class="out">1 changed, 1 only local, 1 only on remote</span></pre>
       </div>
-      <p class="answer-caption">画像も、バイナリも、サーバも、同じ形の答え。いま開いているターミナルの中に。</p>
+      <p class="answer-caption">画像も、PDF も、バイナリも、サーバも、同じ形の答え。いま開いているターミナルの中に。</p>
     </div>
   </section>
 
@@ -133,6 +139,15 @@
 <span class="out">Images differ — 1,560 of 390,000 pixels (0.4%)</span>
 <span class="out">  compared with ±2 per channel</span>
 <span class="out">  largest per-channel gap: 5 — --tolerance=5 would call these the same</span></pre>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="12" width="8" height="6" rx="1"/></svg></div>
+          <h3>PDF</h3>
+          <p>どのページが違い、そのページのどこか — <strong>画素ではなく、紙の上の mm で</strong>。ページごとに描いて画像と同じ方法で比べるので、校正で知りたい答えになる。バイト比較では出ない — 1 語直しただけでファイル全体が組み直される。ページは番号で対にし、余ったページは比べずに列挙する。</p>
+<pre class="ex"><span class="p">$</span> mrdiff proof-v1.pdf proof-v2.pdf
+<span class="out">PDFs differ — 1 of 12 pages</span>
+<span class="out">p.7  1 region</span>
+<span class="out">     top 69 mm, left 96 mm, 16 × 5 mm</span></pre>
         </div>
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
@@ -233,6 +248,7 @@
 
 <span class="c"># あとは</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.png b.png</span>
+<span class="p">$</span> <span class="cmd">mrdiff a.pdf b.pdf</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.bin b.bin</span>
 <span class="p">$</span> <span class="cmd">mrdiff https://example.com/a https://example.com/b</span>
 <span class="p">$</span> <span class="cmd">mrdiff --clipboard notes.md</span>
@@ -245,7 +261,7 @@
       </div>
       <p style="text-align:center; color: var(--text-dim); font-size: 13px; margin-top: 24px;">
         macOS 専用。Swift 製で、画像の読み込みに OS の ImageIO を使うため。
-        出力は既定で英語。<code>MRDIFF_LANG=ja</code> で人向けの行だけ日本語になる。JSON と終了コードは変わらない。
+        出力は既定で英語。<code>MRDIFF_LANG=ja</code>（1 回だけなら <code>--lang=ja</code>）で人向けの行だけ日本語になる。JSON と終了コードは変わらない。<code>mrdiff --help --lang=ja</code> でオプションの一覧が日本語で出る。
       </p>
     </div>
   </section>

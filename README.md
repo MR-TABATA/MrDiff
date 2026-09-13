@@ -4,6 +4,8 @@
 
 **Images, PDFs, binaries, URLs — and text, of course. One command, two answers: do they differ, and where.**
 
+[日本語](README.ja.md)
+
 ```
 $ mrdiff before.png after.png
 Images differ — 12,481 of 390,000 pixels (3.2%)
