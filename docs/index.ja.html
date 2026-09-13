@@ -241,10 +241,13 @@
     <div class="wrap">
       <div class="section-title">
         <h2>インストール</h2>
-        <p><code>brew install</code> 1 回。ほかに設定するものは無い。</p>
+        <p><code>brew install</code> 1 回。ほかに設定するものは無い。上げるときは <code>brew update &amp;&amp; brew upgrade mrdiff</code> ── 先に <code>brew update</code> を。しないと Homebrew が新しい版に気づかず、<code>brew upgrade</code> が「もう入っている」と言う。</p>
       </div>
       <div class="install">
 <pre><span class="p">$</span> <span class="cmd">brew install mr-tabata/tap/mrdiff</span>
+
+<span class="c"># 上げるとき（先に brew update。しないと新しい版に気づかない）</span>
+<span class="p">$</span> <span class="cmd">brew update &amp;&amp; brew upgrade mrdiff</span>
 
 <span class="c"># あとは</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.png b.png</span>

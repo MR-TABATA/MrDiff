@@ -64,6 +64,18 @@ a different output for each.
 brew install mr-tabata/tap/mrdiff
 ```
 
+To update to the latest release:
+
+```bash
+brew update && brew upgrade mrdiff
+mrdiff --version                      # confirm
+```
+
+`brew update` refreshes the tap so Homebrew sees the new version; without it,
+`brew upgrade` can report "already installed". Release notes are on the
+[Releases page](https://github.com/MR-TABATA/MrDiff/releases) and the
+[release history](https://mr-tabata.github.io/MrDiff/releases.en.html).
+
 macOS only. Image decoding uses the system's ImageIO, which is what ties it to
 the platform. Output is English by default; `MRDIFF_LANG=ja` (or `--lang=ja`
 for one run) switches the human-readable lines to Japanese. JSON output and exit

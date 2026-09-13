@@ -63,6 +63,18 @@ MrDiff はそれに取って代わろうとしない。MrDiff が足すのは、
 brew install mr-tabata/tap/mrdiff
 ```
 
+最新のリリースに上げるには：
+
+```bash
+brew update && brew upgrade mrdiff
+mrdiff --version                      # 確認
+```
+
+`brew update` で tap を読み直さないと、Homebrew が新しい版に気づかず
+`brew upgrade` が「もう入っている」と言うことがある。何が変わったかは
+[Releases](https://github.com/MR-TABATA/MrDiff/releases) と
+[リリース履歴](https://mr-tabata.github.io/MrDiff/releases.ja.html)に。
+
 macOS 専用。画像の読み込みに OS の ImageIO を使っていて、それが
 プラットフォームに縛られる理由。出力は既定で英語。`MRDIFF_LANG=ja`（1 回だけなら
 `--lang=ja`）で人が読む行が日本語になる。JSON の出力と終了コードは変わらず、

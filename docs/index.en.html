@@ -241,10 +241,13 @@
     <div class="wrap">
       <div class="section-title">
         <h2>Install</h2>
-        <p>One <code>brew install</code>. Nothing else to set up.</p>
+        <p>One <code>brew install</code>. Nothing else to set up. To update, <code>brew update &amp;&amp; brew upgrade mrdiff</code> — run <code>brew update</code> first, or Homebrew has not seen the new version yet and <code>brew upgrade</code> says it is already installed.</p>
       </div>
       <div class="install">
 <pre><span class="p">$</span> <span class="cmd">brew install mr-tabata/tap/mrdiff</span>
+
+<span class="c"># update later (brew update first, so Homebrew sees the new version)</span>
+<span class="p">$</span> <span class="cmd">brew update &amp;&amp; brew upgrade mrdiff</span>
 
 <span class="c"># then</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.png b.png</span>
