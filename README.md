@@ -57,6 +57,7 @@ a different output for each.
 | Clipboard | compare what you just copied against a file or a URL |
 | **A site vs its source** | check whether a deployed site matches the git-tracked folder it was built from |
 | **A local dir vs a server** | over SSH, both ways — including files left on the server that are not in your local copy |
+| **Two folders** | which files differ, and which exist on one side only |
 
 ## Install
 
@@ -94,10 +95,11 @@ mrdiff --clipboard notes.md           # clipboard vs file
 mrdiff --site https://example.com ./site   # is the live site in sync with ./site?
 mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
+mrdiff old/ new/                      # two folders — which files differ
 
 mrdiff --help                         # every option, one line each
 mrdiff --help --lang=ja               # the same in Japanese
-mrdiff --version                      # mrdiff 0.2.0
+mrdiff --version                      # mrdiff 0.3.0
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --json a.bin b.bin             # machine readable
 
@@ -250,20 +252,36 @@ That last line is the point for anyone maintaining a server: a file sitting in t
 web root that is not in your repo — an old export, a forgotten backup — is exactly
 what you want flagged, and over SSH the remote side can be listed, so it can be.
 
+### Two folders
+
+```
+$ mrdiff old/ new/
+changed   ch/chapter-02.pdf
+only in A   appendix.md
+only in B   chapter-07.md
+1 changed, 1 only in A, 1 only in B
+```
+
+Both trees are walked and every regular file is fingerprinted, so a file that
+exists on one side only is reported as such — the same answer `--ssh` gives
+for a server, for the folder next door. It stops at the file level on purpose:
+`mrdiff old/ch/chapter-02.pdf new/ch/chapter-02.pdf` tells you which page.
+Nothing is filtered — `.DS_Store` counts, as it does for `diff -r`.
+
 ### JSON
 
 `--json` prints one line of JSON and nothing else. It is never translated,
-and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0):
+and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0):
 
 | key | |
 | :--- | :--- |
-| `kind` | what it was compared as: `text`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`) |
+| `kind` | what it was compared as: `text`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`), `dir` (two folders) |
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
 | image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict. `tone_shift` is the mean signed difference B − A per channel — a photo that is "44% different" because it was exported brighter shows up here as `[21.3, 18.6, 17.7]` |
 | pdf | `pages_a`, `pages_b`, `dpi`, and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
-| site / tree | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]` |
+| site / tree / dir | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]`. `dir` names its sides `only_a` / `only_b` where `tree` says `only_local` / `only_remote` |
 | any | `redirected: [{from, to}]` when a URL was redirected |
 
 ```

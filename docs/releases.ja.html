@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrDiff — リリース履歴</title>
-  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から、PDF を足した v0.2.0 まで。">
+  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.3.0 まで。">
 
   <meta property="og:title" content="MrDiff — リリース履歴">
-  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から、PDF を足した v0.2.0 まで。">
+  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.3.0 まで。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.ja.html">
   <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
@@ -61,18 +61,22 @@
   <header class="rel-head">
     <div class="wrap">
       <div class="kicker">リリース履歴</div>
-      <h1>4 つのリリース。増えた種類は 1 つ。</h1>
-      <p class="lead">2026 年 9 月 12 日の最初のリリースから、翌日の v0.2.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べ、ページのどこかを言うようになった。</p>
+      <h1>5 つのリリース。増えた入力は 2 つ。</h1>
+      <p class="lead">2026 年 9 月 12 日の最初のリリースから、翌日の v0.3.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つも比べるようになった。</p>
     </div>
   </header>
 
   <div class="wrap">
     <section class="rel-era">
       <div class="rel-era-head">
-        <h2>新しい順</h2><span class="span">v0.2.0 ← v0.1.0 · 2026 年 9 月 13 – 12 日</span>
+        <h2>新しい順</h2><span class="span">v0.3.0 ← v0.1.0 · 2026 年 9 月 13 – 12 日</span>
         <p>CLI は無料で MIT。各リリースは universal binary（Apple silicon + Intel）の zip で、Homebrew の tap はそれを指す。</p>
       </div>
 
+      <div class="rel-row m">
+        <span class="v">0.3.0</span><span class="d">9/13</span>
+        <span class="t"><strong>フォルダ 2 つ。</strong><code>mrdiff old/ new/</code> で、どのファイルが違うか・片側にしか無いかを言う。<code>--ssh</code> がサーバ相手に返していた答えを、隣のフォルダに。<code>--json</code> に <code>kind: "dir"</code> が増えた</span>
+      </div>
       <div class="rel-row m">
         <span class="v">0.2.0</span><span class="d">9/13</span>
         <span class="t"><strong>PDF。</strong>ページごとに描いて画像と同じ方法で比べ、どのページが違い、そのページのどこかを mm で言う。ページ数と紙の大きさの違いは別に言う。あわせて <code>--help</code>（スイッチごとに 1 行）と、1 回きりの言語切り替え <code>--lang=en|ja</code></span>
@@ -96,7 +100,7 @@
       <ul>
           <li>日付は GitHub の Release の日付（JST）。版は <code>--version</code> とタグのもの。</li>
           <li>ここにある全リリースに配布物の zip がある。タグだけのものは無い。</li>
-          <li>JSON の形は v0.1.0 から固定。v0.2.0 で <code>pdf</code> という kind が増えただけで、既存のものは変えていない。</li>
+          <li>JSON の形は v0.1.0 から固定。v0.2.0 で <code>pdf</code>、v0.3.0 で <code>dir</code> という kind が増えただけで、既存のものは変えていない。</li>
       </ul>
     </aside>
   </div>

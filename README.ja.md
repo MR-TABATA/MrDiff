@@ -56,6 +56,7 @@ MrDiff はそれに取って代わろうとしない。MrDiff が足すのは、
 | クリップボード | いまコピーしたものを、ファイルか URL と比べる |
 | **サイトとその元** | 公開中のサイトが、元になった git 管理下のフォルダと合っているか |
 | **手元のディレクトリとサーバ** | SSH 越しに両方向 ── 手元に無くサーバに残っているファイルも |
+| **フォルダ 2 つ** | どのファイルが違うか、片側にしか無いか |
 
 ## インストール
 
@@ -92,10 +93,11 @@ mrdiff --clipboard notes.md           # クリップボード vs ファイル
 mrdiff --site https://example.com ./site   # 公開中のサイトは ./site と合っているか
 mrdiff local.conf host:/etc/app.conf       # ssh 越しのファイル 1 つ
 mrdiff --ssh ./site host:/var/www          # ssh 越しのツリー全体、両方向
+mrdiff old/ new/                      # フォルダ 2 つ ── どのファイルが違うか
 
 mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
-mrdiff --version                      # mrdiff 0.2.0
+mrdiff --version                      # mrdiff 0.3.0
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
 mrdiff --json a.bin b.bin             # 機械向け
 
@@ -238,20 +240,35 @@ only on remote (left over?)   backups/customers.sql     ← 手元に無い
 無いファイル ── 古い書き出し、忘れられたバックアップ ── こそ印を付けたいもので、SSH
 なら向こう側を列挙できるので、付けられる。
 
+### フォルダ 2 つ
+
+```
+$ mrdiff old/ new/
+changed   ch/chapter-02.pdf
+only in A   appendix.md
+only in B   chapter-07.md
+1 changed, 1 only in A, 1 only in B
+```
+
+両方のツリーを歩いて全ファイルに指紋を付けるので、片側にしか無いファイルもそう言う ──
+`--ssh` がサーバ相手に返す答えを、隣のフォルダに。ファイル単位で止めるのは意図したもので、
+`mrdiff old/ch/chapter-02.pdf new/ch/chapter-02.pdf` を打てば、どのページかまで出る。
+何も除外しない ── `.DS_Store` も数える（`diff -r` と同じ）。
+
 ### JSON
 
 `--json` は 1 行の JSON だけを出す。訳さない。形は v0.1.0 から固定
-（`pdf` は v0.2.0 で追加）：
+（`pdf` は v0.2.0、`dir` は v0.3.0 で追加）：
 
 | キー | |
 | :--- | :--- |
-| `kind` | 何として比べたか：`text`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`） |
+| `kind` | 何として比べたか：`text`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ） |
 | `result` | `identical` か `differ`。画像は `size_mismatch` も。`--site` は、違いは無いが確認できなかったファイルがあれば `error` |
 | text | `changed`、`added`、`removed`。`changed` は置き換えられた塊を両側の大きいほうで数える ── 1 行消して 2 行足せば `changed: 2` |
 | image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
 | pdf | `pages_a`、`pages_b`、`dpi`、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |
-| site / tree | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]` |
+| site / tree / dir | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]`。`dir` は両側を `only_a` / `only_b` と呼ぶ（`tree` は `only_local` / `only_remote`） |
 | 共通 | URL が飛ばされたときの `redirected: [{from, to}]` |
 
 ```

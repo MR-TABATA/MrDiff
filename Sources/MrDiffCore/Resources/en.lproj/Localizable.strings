@@ -87,8 +87,8 @@
 "error.mixed_pdf"      = "cannot compare a PDF with a non-PDF file";
 
 /* --help。スイッチごとに 1 行。 */
-"help.usage"           = "usage: mrdiff [options] <a> <b>\n       mrdiff --clipboard <b>\n       mrdiff --site <https://base> <dir>\n       mrdiff --ssh <dir> <host:path>";
-"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files or\nhttp(s) URLs; what they are is decided from the content, not the name — text, image,\nPDF or binary. Nothing is rendered.";
+"help.usage"           = "usage: mrdiff [options] <a> <b>\n       mrdiff [options] <dirA> <dirB>\n       mrdiff --clipboard <b>\n       mrdiff --site <https://base> <dir>\n       mrdiff --ssh <dir> <host:path>";
+"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files or\nhttp(s) URLs; what they are is decided from the content, not the name — text, image,\nPDF or binary. Two folders: which files differ, or exist on one side only. Nothing is rendered.";
 "help.exit_code"       = "exit 1 when they differ (default: 0 either way; 2 when it could not run)";
 "help.json"            = "one line of JSON, never translated";
 "help.tolerance"       = "images/PDFs: treat per-channel gaps up to N as the same (default 0 = exact)";
@@ -104,3 +104,12 @@
 "help.exit"            = "exit codes: 0 it ran, 1 they differ and --exit-code was given, 2 it could not run";
 "help.other_lang.ja"   = "Japanese: mrdiff --help --lang=ja";
 "help.other_lang.en"   = "English: mrdiff --help --lang=en";
+
+/* 手元のフォルダ同士。 */
+"dir.changed"          = "changed   %@";
+"dir.only_a"           = "only in A   %@";
+"dir.only_b"           = "only in B   %@";
+"dir.in_sync"          = "No differences — %d files match";
+"dir.summary"          = "%d changed, %d only in A, %d only in B";
+"error.mixed_dir"      = "cannot compare a folder with a file";
+"error.dir_flag"       = "--tolerance and --ignore-alpha apply to images and PDFs, not folders (compare the two files directly)";

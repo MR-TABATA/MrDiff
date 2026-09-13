@@ -158,6 +158,31 @@ public enum JSONOutput {
         ]
     }
 
+    /// 手元のフォルダ同士。形は `tree` と同じで、名前だけ `a` / `b`
+    /// （`only_local` / `only_remote` は手元同士では嘘になる。片方をリモートと呼べない）。
+    public static func dir(_ d: TreeDiff) -> [String: Any] {
+        let rows: [[String: Any]] = d.rows.map { row in
+            let st: String
+            switch row.status {
+            case .identical: st = "identical"
+            case .changed:   st = "changed"
+            case .onlyLeft:  st = "only_a"
+            case .onlyRight: st = "only_b"
+            }
+            return ["path": row.path, "status": st]
+        }
+        return [
+            "kind": "dir",
+            "result": d.allIdentical ? "identical" : "differ",
+            "in_sync": d.allIdentical,
+            "files": d.rows.count,
+            "changed": d.changed.count,
+            "only_a": d.onlyLeft.count,
+            "only_b": d.onlyRight.count,
+            "rows": rows,
+        ]
+    }
+
     /// `--ssh`（ディレクトリ両方向）。
     public static func tree(_ d: TreeDiff) -> [String: Any] {
         let rows: [[String: Any]] = d.rows.map { row in

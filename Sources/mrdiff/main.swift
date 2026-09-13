@@ -69,6 +69,7 @@ let wantsJSON = args.contains("--format=json") || args.contains("--json")
 let wantsExitCode = args.contains("--exit-code")
 let ignoreAlpha = args.contains("--ignore-alpha")
 let noPager = args.contains("--no-pager")
+let useClipboardFlag = args.contains("--clipboard")
 let files = args.filter { !$0.hasPrefix("-") }
 
 func die(_ message: String) -> Never {
@@ -190,8 +191,47 @@ if let siteFlagIndex = args.firstIndex(of: "--site") {
     exit(result.allInSync ? 0 : (wantsExitCode ? 1 : 0))
 }
 
+// **手元のフォルダ同士。** `--ssh` はサーバ相手に両方向で比べられるのに、隣のフォルダとは
+// 比べられなかった。同じ部品（RemoteTree.local ＋ TreeDiff）を両側に当てるだけ。
+// 言うのは「どのファイルが違う／どちらにだけある」まで ―― 中身は、その 2 本を渡せば出る。
+//   mrdiff old/ new/
+if !useClipboardFlag, files.count == 2 {
+    func isDir(_ p: String) -> Bool {
+        var d: ObjCBool = false
+        return FileManager.default.fileExists(atPath: p, isDirectory: &d) && d.boolValue
+    }
+    let dirA = isDir(files[0]), dirB = isDir(files[1])
+    // 片方だけフォルダなら比べない（ファイルとフォルダは突き合わせられない）。
+    if dirA != dirB { die(t("error.mixed_dir")) }
+    if dirA {
+        // 画素のつまみはフォルダには効かない。黙って飲まない。
+        if tolerance > 0 || ignoreAlpha { die(t("error.dir_flag")) }
+        let left: [String: String], right: [String: String]
+        do {
+            left = try RemoteTree.local(URL(fileURLWithPath: files[0], isDirectory: true))
+            right = try RemoteTree.local(URL(fileURLWithPath: files[1], isDirectory: true))
+        } catch { die("\(error)") }
+        let d = TreeDiff.compare(
+            leftPaths: left.keys.sorted(), rightPaths: right.keys.sorted(),
+            leftHash: { left[$0] }, rightHash: { right[$0] })
+        if wantsJSON {
+            print(JSONOutput.encode(JSONOutput.dir(d)))
+        } else {
+            for r in d.changed   { print(t("dir.changed", r.path)) }
+            for r in d.onlyLeft  { print(t("dir.only_a", r.path)) }
+            for r in d.onlyRight { print(t("dir.only_b", r.path)) }
+            if d.allIdentical {
+                print(t("dir.in_sync", d.identical.count))
+            } else {
+                print(t("dir.summary", d.changed.count, d.onlyLeft.count, d.onlyRight.count))
+            }
+        }
+        exit(d.allIdentical ? 0 : (wantsExitCode ? 1 : 0))
+    }
+}
+
 // **入れ物は 3 種類**（ファイル・URL・クリップボード）。取ってきた後は同じ道を通る。
-let useClipboard = args.contains("--clipboard")
+let useClipboard = useClipboardFlag
 let inputs: [Input]
 if useClipboard {
     // `mrdiff --clipboard notes.md` ＝ クリップボード vs 相手 1 つ。

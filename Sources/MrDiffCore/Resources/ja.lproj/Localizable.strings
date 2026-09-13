@@ -87,8 +87,8 @@
 "error.mixed_pdf"      = "PDF と PDF でないものは比べられません";
 
 /* --help。スイッチごとに 1 行。 */
-"help.usage"           = "使い方: mrdiff [オプション] <a> <b>\n        mrdiff --clipboard <b>\n        mrdiff --site <https://base> <dir>\n        mrdiff --ssh <dir> <host:path>";
-"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイルか http(s) の URL。\n何として比べるか（テキスト・画像・PDF・バイナリ）は名前ではなく中身で決めます。絵は出しません。";
+"help.usage"           = "使い方: mrdiff [オプション] <a> <b>\n        mrdiff [オプション] <フォルダA> <フォルダB>\n        mrdiff --clipboard <b>\n        mrdiff --site <https://base> <dir>\n        mrdiff --ssh <dir> <host:path>";
+"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイルか http(s) の URL。\n何として比べるか（テキスト・画像・PDF・バイナリ）は名前ではなく中身で決めます。フォルダ 2 つなら、どのファイルが違うか・片側にしか無いかを言います。絵は出しません。";
 "help.exit_code"       = "違えば 1 で終わる（既定はどちらでも 0。実行できなければ 2）";
 "help.json"            = "1 行の JSON で出す。訳さない";
 "help.tolerance"       = "画像・PDF：チャンネルごとに ±N までは同じとみなす（既定 0 ＝ 完全一致）";
@@ -104,3 +104,12 @@
 "help.exit"            = "終了コード: 0 実行できた、1 違いがあり --exit-code を付けていた、2 実行できなかった";
 "help.other_lang.ja"   = "Japanese: mrdiff --help --lang=ja";
 "help.other_lang.en"   = "English: mrdiff --help --lang=en";
+
+/* 手元のフォルダ同士。 */
+"dir.changed"          = "違う   %@";
+"dir.only_a"           = "A だけ   %@";
+"dir.only_b"           = "B だけ   %@";
+"dir.in_sync"          = "違いはありません ── %d 個が一致";
+"dir.summary"          = "違う %d／A だけ %d／B だけ %d";
+"error.mixed_dir"      = "フォルダとファイルは比べられません";
+"error.dir_flag"       = "--tolerance と --ignore-alpha は画像と PDF のもので、フォルダには効きません（ファイル 2 つを直接比べてください）";

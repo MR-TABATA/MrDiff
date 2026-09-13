@@ -19,7 +19,8 @@ final class JSONOutputTests: XCTestCase {
         let binary = JSONOutput.binary(BinaryDiff.compare(Data([1, 2]), Data([1, 2])))
         let site = JSONOutput.site(SiteDiff(rows: []))
         let tree = JSONOutput.tree(TreeDiff(rows: []))
-        for (o, kind) in [(text, "text"), (image, "image"), (binary, "binary"), (site, "site"), (tree, "tree")] {
+        let dir = JSONOutput.dir(TreeDiff(rows: []))
+        for (o, kind) in [(text, "text"), (image, "image"), (binary, "binary"), (site, "site"), (tree, "tree"), (dir, "dir")] {
             XCTAssertEqual(o["kind"] as? String, kind)
             XCTAssertEqual(o["result"] as? String, "identical", kind)
         }
@@ -129,6 +130,20 @@ final class JSONOutputTests: XCTestCase {
         ])
         let s = JSONOutput.encode(JSONOutput.tree(d))
         XCTAssertEqual(s, #"{"changed":1,"files":4,"in_sync":false,"kind":"tree","only_local":1,"only_remote":1,"result":"differ","rows":[{"path":"same","status":"identical"},{"path":"conf","status":"changed"},{"path":"new.html","status":"only_local"},{"path":"left-over.sql","status":"only_remote"}]}"#)
+    }
+
+    // MARK: - dir（手元のフォルダ同士）
+
+    /// 形は tree と同じで、名前だけ a / b。手元同士に「リモート」は無い。
+    func testDirDiffer() {
+        let d = TreeDiff(rows: [
+            .init(path: "ch/same.pdf", status: .identical),
+            .init(path: "ch/chapter-02.pdf", status: .changed),
+            .init(path: "appendix.md", status: .onlyLeft),
+            .init(path: "chapter-07.md", status: .onlyRight),
+        ])
+        let s = JSONOutput.encode(JSONOutput.dir(d))
+        XCTAssertEqual(s, #"{"changed":1,"files":4,"in_sync":false,"kind":"dir","only_a":1,"only_b":1,"result":"differ","rows":[{"path":"ch/same.pdf","status":"identical"},{"path":"ch/chapter-02.pdf","status":"changed"},{"path":"appendix.md","status":"only_a"},{"path":"chapter-07.md","status":"only_b"}]}"#)
     }
 
     // MARK: - 穴

@@ -182,6 +182,16 @@
           <h3>手元のディレクトリとサーバ、SSH 越しに</h3>
           <p><code>host:/path</code> はファイルとして使える。<code>--ssh</code> はツリー全体を<strong>両方向</strong>で見る。だから、デプロイ確認がふつう出せない 3 つ目が出る: <strong>サーバにあってリポジトリに無いファイル</strong> — 古い書き出し、忘れたバックアップ。認証は手元の <code>ssh</code> のもの: 鍵、<code>~/.ssh/config</code>、agent。パスワードは聞かない。</p>
         </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+          <h3>フォルダ 2 つ</h3>
+          <p>どのファイルが違うか、片側にしか無いか — <code>--ssh</code> がサーバ相手に返す答えを、隣のフォルダに。ファイル単位で止めるのは意図したもの。その 2 本を渡せば、どのページかまで言う。</p>
+<pre class="ex"><span class="p">$</span> mrdiff old/ new/
+<span class="out">changed   ch/chapter-02.pdf</span>
+<span class="out">only in A   appendix.md</span>
+<span class="out">only in B   chapter-07.md</span>
+<span class="out">1 changed, 1 only in A, 1 only in B</span></pre>
+        </div>
       </div>
 
       <div class="section-title" style="margin-top: 72px;">
@@ -258,6 +268,7 @@
 <span class="p">$</span> <span class="cmd">mrdiff --site https://example.com ./site</span>
 <span class="p">$</span> <span class="cmd">mrdiff local.conf host:/etc/app.conf</span>
 <span class="p">$</span> <span class="cmd">mrdiff --ssh ./site host:/var/www</span>
+<span class="p">$</span> <span class="cmd">mrdiff old/ new/</span>
 
 <span class="p">$</span> <span class="cmd">mrdiff --exit-code a.png b.png</span>     <span class="c"># 違えば 1 で終わる</span>
 <span class="p">$</span> <span class="cmd">mrdiff --json a.bin b.bin</span>          <span class="c"># 機械向け</span></pre>
