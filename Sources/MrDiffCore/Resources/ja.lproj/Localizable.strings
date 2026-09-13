@@ -20,7 +20,7 @@
 "error.cannot_open"    = "開けません: %@";
 "error.not_an_image"   = "画像として読めません: %@";
 "error.cannot_decode"  = "読み込めません: %@";
-"error.usage"          = "使い方: mrdiff [--version] [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] <a> <b>\n       a と b はファイルか http(s) の URL。--clipboard のときは 1 つだけ渡す";
+"error.usage"          = "使い方: mrdiff [--version] [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a と b はファイルか http(s) の URL。--clipboard のときは 1 つだけ渡す\n       mrdiff --help でオプションの一覧が出ます";
 "error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";
 "error.bad_color"      = "--color には always / never / auto を指定してください";
 "error.mixed_kinds"    = "テキストとテキストでないものは比べられません";
@@ -68,3 +68,39 @@
 "error.ssh_usage"      = "使い方: mrdiff --ssh <ローカルのフォルダ> <host:/path>";
 "error.ssh_list_failed" = "リモートのフォルダを一覧できません: %@";
 "error.not_a_dir"      = "%@ はフォルダではありません";
+
+/* PDF。ページごとに描いて画素で比べる。場所は紙の単位（mm）。 */
+"pdf.identical"        = "違いはありません（%d ページ）";
+"pdf.summary"          = "%2$d ページ中 %1$d ページが違います";
+"pdf.page_count"       = "ページ数が違います — %d と %d";
+"pdf.common_same"      = "共通の %d ページに違いはありません";
+"pdf.page.differ"      = "p.%d  違う領域 %d か所";
+"pdf.page.differ.one"  = "p.%d  違う領域 1 か所";
+"pdf.page.size_mismatch" = "p.%d  紙の大きさが違います — %@ × %@ mm と %@ × %@ mm";
+"pdf.region"           = "上 %@ mm 左 %@ mm  %@ × %@ mm";
+"pdf.only"             = "p.%d〜%d  %@ にだけあります";
+"pdf.only.one"         = "p.%d  %@ にだけあります";
+"pdf.rendered"         = "ページは %d dpi で描いて比べました。位置は紙の上の mm です";
+"error.not_a_pdf"      = "PDF ではありません（またはページがありません）";
+"error.pdf_render"     = "%d ページ目を描けません";
+"error.pdf_alpha_flag" = "--ignore-alpha は PDF には効きません（ページは白地に描きます）";
+"error.mixed_pdf"      = "PDF と PDF でないものは比べられません";
+
+/* --help。スイッチごとに 1 行。 */
+"help.usage"           = "使い方: mrdiff [オプション] <a> <b>\n        mrdiff --clipboard <b>\n        mrdiff --site <https://base> <dir>\n        mrdiff --ssh <dir> <host:path>";
+"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイルか http(s) の URL。\n何として比べるか（テキスト・画像・PDF・バイナリ）は名前ではなく中身で決めます。絵は出しません。";
+"help.exit_code"       = "違えば 1 で終わる（既定はどちらでも 0。実行できなければ 2）";
+"help.json"            = "1 行の JSON で出す。訳さない";
+"help.tolerance"       = "画像・PDF：チャンネルごとに ±N までは同じとみなす（既定 0 ＝ 完全一致）";
+"help.ignore_alpha"    = "画像：透明度を比べない";
+"help.color"           = "テキスト diff に色を付ける（既定 auto：端末のときだけ。NO_COLOR も見る）";
+"help.no_pager"        = "長いテキスト diff をページャに渡さない";
+"help.clipboard"       = "クリップボードの中身を、ファイルか URL 1 つと比べる";
+"help.site"            = "公開中のサイトを、その元になった git 管理下のフォルダと突き合わせる";
+"help.ssh"             = "手元のフォルダとサーバ上のフォルダを、両方向で突き合わせる";
+"help.lang"            = "この出力の言語（MRDIFF_LANG と同じ。既定 en。LANG は見ない）";
+"help.version"         = "版を表示する";
+"help.help"            = "この説明";
+"help.exit"            = "終了コード: 0 実行できた、1 違いがあり --exit-code を付けていた、2 実行できなかった";
+"help.other_lang.ja"   = "Japanese: mrdiff --help --lang=ja";
+"help.other_lang.en"   = "English: mrdiff --help --lang=en";

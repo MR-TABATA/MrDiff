@@ -2,13 +2,19 @@
 
 # MrDiff
 
-**Images, binaries, URLs — and text, of course. One command, two answers: do they differ, and where.**
+**Images, PDFs, binaries, URLs — and text, of course. One command, two answers: do they differ, and where.**
 
 ```
 $ mrdiff before.png after.png
 Images differ — 12,481 of 390,000 pixels (3.2%)
 First difference at (412, 88)
   largest per-channel gap: 41 — --tolerance=41 would call these the same
+
+$ mrdiff proof-v1.pdf proof-v2.pdf
+PDFs differ — 1 of 12 pages
+p.7  2 regions
+     top 107 mm, left 25 mm, 71 × 14 mm
+     top 205 mm, left 106 mm, 21 × 21 mm
 
 $ mrdiff firmware-v1.bin firmware-v2.bin
 Binary files differ — 47 regions, first at 0x1A3F
@@ -35,7 +41,7 @@ It does not render the difference. For text,
 [delta](https://github.com/dandavison/delta) and
 [difftastic](https://github.com/Wilfred/difftastic) show a diff well, and MrDiff
 does not try to replace them. What MrDiff adds is the same short answer for every
-kind of input — an image, a binary, a URL, a live site, a server, a 10 GB log
+kind of input — an image, a PDF, a binary, a URL, a live site, a server, a 10 GB log
 where you only care whether anything moved — without switching tools or learning
 a different output for each.
 
@@ -43,6 +49,7 @@ a different output for each.
 | :--- | :--- |
 | **Text and source** | line diff, colored, with character-level highlight |
 | **Images** | do they differ, what fraction of pixels, where is the first one |
+| **PDFs** | which pages differ, and where on the page — in millimetres, not pixels |
 | **Binaries** | do they differ, how many regions, offset of the first |
 | **Two URLs** | fetch both, diff the source they return |
 | Clipboard | compare what you just copied against a file or a URL |
@@ -56,14 +63,17 @@ brew install mr-tabata/tap/mrdiff
 ```
 
 macOS only. Image decoding uses the system's ImageIO, which is what ties it to
-the platform. Output is English by default; `MRDIFF_LANG=ja` switches the
-human-readable lines to Japanese. JSON output and exit codes never change.
+the platform. Output is English by default; `MRDIFF_LANG=ja` (or `--lang=ja`
+for one run) switches the human-readable lines to Japanese. JSON output and exit
+codes never change, and the OS locale is never consulted — output pasted into an
+issue stays readable to whoever answers it.
 
 ## Usage
 
 ```bash
 mrdiff a.txt b.txt                    # text
 mrdiff a.png b.png                    # image — summary, not a picture
+mrdiff a.pdf b.pdf                    # PDF — which pages, where on the page (mm)
 mrdiff a.bin b.bin                    # binary — summary
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # clipboard vs file
@@ -71,7 +81,9 @@ mrdiff --site https://example.com ./site   # is the live site in sync with ./sit
 mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
 
-mrdiff --version                      # mrdiff 0.1.2
+mrdiff --help                         # every option, one line each
+mrdiff --help --lang=ja               # the same in Japanese
+mrdiff --version                      # mrdiff 0.2.0
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --json a.bin b.bin             # machine readable
 
@@ -127,6 +139,32 @@ A lossy re-encode does not collapse to zero at a small tolerance: on the test
 pair above the largest gap is 36, so `--tolerance=2` still leaves half the pixels
 different. Read the gap as a measure of how far the values have spread, not as an
 invitation to set the tolerance to it.
+
+### PDFs
+
+A PDF is what design tools hand over at the end, and a byte comparison of two
+versions tells you nothing — one corrected word re-packs the compressed streams
+and shifts every offset after it. MrDiff renders each page and compares pixels,
+page by page, then reports positions **on the paper, in millimetres**, so the
+answer is the one a proofreader wants: which page, and where on it.
+
+```
+$ mrdiff proof-v1.pdf proof-v2.pdf
+Page count differs — 12 vs 13
+PDFs differ — 1 of 12 pages
+p.7  2 regions
+     top 107 mm, left 25 mm, 71 × 14 mm
+     top 205 mm, left 106 mm, 21 × 21 mm
+p.13  only in B
+  pages rendered at 72 dpi; positions are on the page, in mm
+```
+
+Pages are paired by number; when the counts differ, the extra pages are listed
+but not compared. A page whose paper size differs is reported as such and not
+compared further, like an image of a different size. Pages are rendered at
+72 dpi (one point per pixel), on white — so `--ignore-alpha` has nothing to
+apply to and is refused. `--tolerance` works as for images. This is visual
+comparison only: a changed word is found as a changed region, not quoted.
 
 ### URLs and the clipboard
 
@@ -201,14 +239,15 @@ what you want flagged, and over SSH the remote side can be listed, so it can be.
 ### JSON
 
 `--json` prints one line of JSON and nothing else. It is never translated,
-and its shape is fixed from v0.1.0 on:
+and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0):
 
 | key | |
 | :--- | :--- |
-| `kind` | what it was compared as: `text`, `image`, `binary`, `site` (`--site`), `tree` (`--ssh`) |
+| `kind` | what it was compared as: `text`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`) |
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
 | image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict. `tone_shift` is the mean signed difference B − A per channel — a photo that is "44% different" because it was exported brighter shows up here as `[21.3, 18.6, 17.7]` |
+| pdf | `pages_a`, `pages_b`, `dpi`, and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
 | site / tree | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]` |
 | any | `redirected: [{from, to}]` when a URL was redirected |

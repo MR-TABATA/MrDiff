@@ -19,6 +19,52 @@ if args.contains("--version") || args.contains("-V") {
     exit(0)
 }
 
+// **言語は、訳す前に決める。** `--lang=ja` は `MRDIFF_LANG=ja` と同じ意味で、1 回きりの
+// 切り替え用（環境変数より優先）。OS の `LANG` は見ない ―― Localization.swift の線。
+// `ja` `en` 以外は断る。黙って英語に落とすと「指定したのに効いていない」に気づけない。
+if let raw = args.first(where: { $0.hasPrefix("--lang=") })?.dropFirst("--lang=".count) {
+    let lang = String(raw).lowercased()
+    guard Lang.supported.contains(lang) else {
+        FileHandle.standardError.write(Data("mrdiff: --lang takes en or ja\n".utf8))
+        exit(2)
+    }
+    Lang.select(lang)
+}
+
+// **`--help` はスイッチごとに 1 行。**使い方の 1 行（error.usage）は間違えたときに出るもので、
+// 何をするスイッチかはここでしか読めない。既定は英語、末尾にもう片方の言語への行き方を書く
+// ―― 環境変数を知らない人が日本語の help に辿り着けるように。
+if args.contains("--help") || args.contains("-h") {
+    print(t("help.usage"))
+    print()
+    print(t("help.inputs"))
+    print()
+    let options: [(String, String)] = [
+        ("--exit-code",           "help.exit_code"),
+        ("--json",                "help.json"),
+        ("--tolerance=N",         "help.tolerance"),
+        ("--ignore-alpha",        "help.ignore_alpha"),
+        ("--color=auto|always|never", "help.color"),
+        ("--no-pager",            "help.no_pager"),
+        ("--clipboard",           "help.clipboard"),
+        ("--site <https://base> <dir>", "help.site"),
+        ("--ssh <dir> <host:path>", "help.ssh"),
+        ("--lang=en|ja",          "help.lang"),
+        ("--version",             "help.version"),
+        ("--help",                "help.help"),
+    ]
+    let width = options.map { $0.0.count }.max() ?? 0
+    for (flag, key) in options {
+        let pad = String(repeating: " ", count: width - flag.count + 2)
+        print("  " + flag + pad + t(key))
+    }
+    print()
+    print(t("help.exit"))
+    print()
+    print(t(Lang.current == "ja" ? "help.other_lang.en" : "help.other_lang.ja"))
+    exit(0)
+}
+
 let wantsJSON = args.contains("--format=json") || args.contains("--json")
 let wantsExitCode = args.contains("--exit-code")
 let ignoreAlpha = args.contains("--ignore-alpha")
@@ -220,6 +266,66 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
 
 // **片方だけテキストなら、比べない。**行と画素は突き合わせられない。
 if detectKind(dataA) != detectKind(dataB) { die(t("error.mixed_kinds")) }
+
+// **PDF は画像より先に聞く。** ImageIO は PDF を「1 ページ目だけの画像」として読んで
+// しまうので、後ろに回すと複数ページの PDF が 1 枚の絵として比べられる。
+// ページごとに描いて画素で比べ、場所は紙の単位（mm）で言う。片方だけ PDF なら比べない。
+let pdfA = looksLikePDF(dataA), pdfB = looksLikePDF(dataB)
+if pdfA != pdfB { die(t("error.mixed_pdf")) }
+if pdfA {
+    // 描くときに白で潰すので、透明度は見るものが無い。黙って飲まない（画像の線と同じ）。
+    if ignoreAlpha { die(t("error.pdf_alpha_flag")) }
+    let d: PDFComparison
+    do { d = try comparePDFs(dataA, dataB, tolerance: tolerance) }
+    catch { die("\(error)") }
+
+    if wantsJSON {
+        print(JSONOutput.encode(JSONOutput.pdf(d, tolerance: tolerance, redirects: redirectsJSON)))
+        exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+    }
+    if d.isIdentical {
+        print(t("pdf.identical", d.pagesA))
+        printRedirects()
+        if tolerance > 0 { print("  " + t("note.compared_with", t("note.tolerance", tolerance))) }
+        exit(0)
+    }
+    // **ページ数の違いは、中身の違いと別に言う。**共通のページに違いが無いなら、そう言う。
+    let common = d.pages.count
+    if d.pagesA != d.pagesB { print(t("pdf.page_count", d.pagesA, d.pagesB)) }
+    let differing = d.differingPages
+    if differing.isEmpty {
+        print(t("pdf.common_same", common))
+    } else {
+        print(t("pdf.summary", differing.count, common))
+    }
+    // 単位は mm。72 dpi で 1 px ≈ 0.35 mm なので、整数で言えば十分。
+    let mm = { (v: Double) -> String in String(Int(v.rounded())) }
+    for (i, page) in d.pages.enumerated() {
+        switch page {
+        case .identical:
+            continue
+        case .sizeMismatch(let a, let b):
+            print(t("pdf.page.size_mismatch", i + 1, mm(a.width), mm(a.height), mm(b.width), mm(b.height)))
+        case .differ(let pd):
+            print(pd.regions.count == 1
+                  ? t("pdf.page.differ.one", i + 1)
+                  : t("pdf.page.differ", i + 1, pd.regions.count))
+            for r in pd.regions {
+                print("     " + t("pdf.region", mm(r.top), mm(r.left), mm(r.width), mm(r.height)))
+            }
+        }
+    }
+    // 余ったページは比べていない。どちらにだけあるかを、番号で言う。
+    if d.pagesA != d.pagesB {
+        let more = d.pagesA > d.pagesB ? "A" : "B"
+        let from = common + 1, to = max(d.pagesA, d.pagesB)
+        print(from == to ? t("pdf.only.one", from, more) : t("pdf.only", from, to, more))
+    }
+    printRedirects()
+    print("  " + t("pdf.rendered", d.dpi))
+    if tolerance > 0 { print("  " + t("note.compared_with", t("note.tolerance", tolerance))) }
+    exit(wantsExitCode ? 1 : 0)
+}
 
 // テキストでないものは、**画像として読めるかどうか**でさらに分ける。拡張子は見ない。
 // 片方だけ画像なら比べない（画素と生バイトも突き合わせられない）。

@@ -2,4 +2,4 @@
 ///
 /// scripts/release.sh がタグとここを突き合わせ、違えば止まる ── `--version` が嘘を言う
 /// 配布物を出さないため。版を上げるときはここを直してからタグを打つ。
-let mrdiffVersion = "0.1.2"
+let mrdiffVersion = "0.2.0"

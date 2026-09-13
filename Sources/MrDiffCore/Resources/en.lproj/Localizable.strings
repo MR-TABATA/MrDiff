@@ -20,7 +20,7 @@
 "error.cannot_open"    = "cannot open %@";
 "error.not_an_image"   = "not an image: %@";
 "error.cannot_decode"  = "cannot decode %@";
-"error.usage"          = "usage: mrdiff [--version] [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] <a> <b>\n       a and b may be files or http(s) URLs; with --clipboard, give one";
+"error.usage"          = "usage: mrdiff [--version] [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a and b may be files or http(s) URLs; with --clipboard, give one\n       mrdiff --help lists every option";
 "error.bad_tolerance"  = "--tolerance needs a number 0 or greater";
 "error.bad_color"      = "--color takes always, never or auto";
 "error.mixed_kinds"    = "cannot compare text with a non-text file";
@@ -68,3 +68,39 @@
 "error.ssh_usage"      = "usage: mrdiff --ssh <local-dir> <host:/path>";
 "error.ssh_list_failed" = "cannot list the remote directory: %@";
 "error.not_a_dir"      = "%@ is not a directory";
+
+/* PDF。ページごとに描いて画素で比べる。場所は紙の単位（mm）。 */
+"pdf.identical"        = "No differences (%d pages)";
+"pdf.summary"          = "PDFs differ — %d of %d pages";
+"pdf.page_count"       = "Page count differs — %d vs %d";
+"pdf.common_same"      = "the %d pages they have in common are identical";
+"pdf.page.differ"      = "p.%d  %d regions";
+"pdf.page.differ.one"  = "p.%d  1 region";
+"pdf.page.size_mismatch" = "p.%d  page size differs — %@ × %@ mm vs %@ × %@ mm";
+"pdf.region"           = "top %@ mm, left %@ mm, %@ × %@ mm";
+"pdf.only"             = "p.%d–%d  only in %@";
+"pdf.only.one"         = "p.%d  only in %@";
+"pdf.rendered"         = "pages rendered at %d dpi; positions are on the page, in mm";
+"error.not_a_pdf"      = "not a PDF (or it has no pages)";
+"error.pdf_render"     = "cannot render page %d";
+"error.pdf_alpha_flag" = "--ignore-alpha does not apply to PDFs (pages are rendered on white)";
+"error.mixed_pdf"      = "cannot compare a PDF with a non-PDF file";
+
+/* --help。スイッチごとに 1 行。 */
+"help.usage"           = "usage: mrdiff [options] <a> <b>\n       mrdiff --clipboard <b>\n       mrdiff --site <https://base> <dir>\n       mrdiff --ssh <dir> <host:path>";
+"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files or\nhttp(s) URLs; what they are is decided from the content, not the name — text, image,\nPDF or binary. Nothing is rendered.";
+"help.exit_code"       = "exit 1 when they differ (default: 0 either way; 2 when it could not run)";
+"help.json"            = "one line of JSON, never translated";
+"help.tolerance"       = "images/PDFs: treat per-channel gaps up to N as the same (default 0 = exact)";
+"help.ignore_alpha"    = "images: do not compare the alpha channel";
+"help.color"           = "color the text diff (default auto: only on a terminal; NO_COLOR is honoured)";
+"help.no_pager"        = "do not page a long text diff";
+"help.clipboard"       = "compare the clipboard against one file or URL";
+"help.site"            = "check a deployed site against the git-tracked folder it was built from";
+"help.ssh"             = "compare a local folder with a folder on a server, both ways";
+"help.lang"            = "language of this output (same as MRDIFF_LANG; default en, never taken from LANG)";
+"help.version"         = "print the version";
+"help.help"            = "this text";
+"help.exit"            = "exit codes: 0 it ran, 1 they differ and --exit-code was given, 2 it could not run";
+"help.other_lang.ja"   = "Japanese: mrdiff --help --lang=ja";
+"help.other_lang.en"   = "English: mrdiff --help --lang=en";

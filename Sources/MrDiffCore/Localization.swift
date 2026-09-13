@@ -16,18 +16,33 @@ import Foundation
 
 public enum Lang {
     /// いま使う言語。`MRDIFF_LANG` が `ja` で始まれば日本語、それ以外は英語。
-    public static let current: String = {
-        let raw = ProcessInfo.processInfo.environment["MRDIFF_LANG"] ?? "en"
-        return raw.lowercased().hasPrefix("ja") ? "ja" : "en"
-    }()
+    /// `--lang=` で 1 回だけ変えられる（`select`）―― 環境変数より優先。
+    public private(set) static var current: String = normalize(
+        ProcessInfo.processInfo.environment["MRDIFF_LANG"] ?? "en")
 
-    static let bundle: Bundle = {
-        if let path = Bundle.module.path(forResource: current, ofType: "lproj"),
+    /// 受け付ける言語。`--lang=` の検査もこれで。
+    public static let supported = ["en", "ja"]
+
+    /// `ja_JP.UTF-8` も `ja` も日本語。それ以外は英語。
+    static func normalize(_ raw: String) -> String {
+        raw.lowercased().hasPrefix("ja") ? "ja" : "en"
+    }
+
+    /// `--lang=ja` で切り替える。**訳す前に呼ぶ**（`t()` はその場で引く）。
+    public static func select(_ raw: String) {
+        current = normalize(raw)
+        bundle = load(current)
+    }
+
+    static var bundle: Bundle = load(current)
+
+    private static func load(_ lang: String) -> Bundle {
+        if let path = Bundle.module.path(forResource: lang, ofType: "lproj"),
            let b = Bundle(path: path) {
             return b
         }
         return Bundle.module
-    }()
+    }
 }
 
 /// 訳を引く。**鍵が無ければ鍵そのものを返す**（黙って空文字にしない）。

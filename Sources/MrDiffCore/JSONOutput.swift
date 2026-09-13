@@ -71,6 +71,48 @@ public enum JSONOutput {
         return o
     }
 
+#if canImport(PDFKit)
+    /// PDF。ページごとの答えを `pages` に並べる（両方にあるページだけ）。場所は mm。
+    /// `dpi` は描いた解像度 ―― `changed` / `total` はこれに依るので、必ず添える。
+    public static func pdf(_ r: PDFComparison, tolerance: Int, redirects: [Redirect] = []) -> [String: Any] {
+        var o: [String: Any] = ["kind": "pdf"]
+        o["result"] = r.isIdentical ? "identical" : "differ"
+        o["pages_a"] = r.pagesA
+        o["pages_b"] = r.pagesB
+        o["dpi"] = r.dpi
+        o["pages"] = r.pages.enumerated().map { (i, p) -> [String: Any] in
+            var po: [String: Any] = ["page": i + 1]
+            switch p {
+            case .identical:
+                po["result"] = "identical"
+            case .sizeMismatch(let a, let b):
+                po["result"] = "size_mismatch"
+                po["a"] = ["width_mm": mm(a.width), "height_mm": mm(a.height)]
+                po["b"] = ["width_mm": mm(b.width), "height_mm": mm(b.height)]
+            case .differ(let d):
+                po["result"] = "differ"
+                po["changed"] = d.pixels.changed
+                po["total"] = d.pixels.total
+                po["fraction"] = NSDecimalNumber(string: String(d.pixels.fraction))
+                po["max_gap"] = d.pixels.maxGap
+                po["regions"] = d.regions.map { reg -> [String: Any] in
+                    ["top_mm": mm(reg.top), "left_mm": mm(reg.left),
+                     "width_mm": mm(reg.width), "height_mm": mm(reg.height), "count": reg.count]
+                }
+            }
+            return po
+        }
+        if tolerance > 0 { o["tolerance"] = tolerance }
+        addRedirects(&o, redirects)
+        return o
+    }
+
+    /// mm は小数 1 桁で書く（72 dpi で 1 px ≈ 0.35 mm。それ以上の桁は無い）。
+    private static func mm(_ v: Double) -> NSDecimalNumber {
+        NSDecimalNumber(string: String(format: "%.1f", v))
+    }
+#endif
+
     public static func binary(_ d: BinaryDiff.Result, redirects: [Redirect] = []) -> [String: Any] {
         var o: [String: Any] = ["kind": "binary"]
         if d.isIdentical {
