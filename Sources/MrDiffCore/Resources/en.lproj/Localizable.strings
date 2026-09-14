@@ -144,3 +144,10 @@
 "pdf.text.none"        = "no text to compare (scanned pages?)";
 "error.pdf_no_text"    = "no text in one of the PDFs (scanned pages?) — compare without --text";
 "error.text_flag"      = "--text applies to PDFs";
+
+/* ずらして比べる（画像）。 */
+"help.offset"          = "images: place the right image at (dx,dy) on the left one and compare the overlap only";
+"note.offset"          = "right shifted by (%d, %d) — the %d overlapping pixels only";
+"note.offset.plain"    = "right shifted by (%d, %d)";
+"error.bad_offset"     = "--offset takes two integers: --offset=dx,dy";
+"error.offset_flag"    = "--offset applies to images";

@@ -43,6 +43,7 @@ if args.contains("--help") || args.contains("-h") {
         ("--exit-code",           "help.exit_code"),
         ("--json",                "help.json"),
         ("--tolerance=N",         "help.tolerance"),
+        ("--offset=dx,dy",        "help.offset"),
         ("--ignore-alpha",        "help.ignore_alpha"),
         ("--text",                "help.text"),
         ("--color=auto|always|never", "help.color"),
@@ -86,6 +87,15 @@ if let raw = args.first(where: { $0.hasPrefix("--tolerance=") })?
     .dropFirst("--tolerance=".count) {
     guard let n = Int(raw), n >= 0 else { die(t("error.bad_tolerance")) }
     tolerance = n
+}
+
+// **`--offset=dx,dy`**：右を左の座標でどこに置くか。ヘッダーが 1 行ぶん違うスクリーンショットは
+// そのままでは「全画素が違う」── ずらして重ねれば「中身は同じか」が言える。画像だけ。
+var offset: Point? = nil
+if let raw = args.first(where: { $0.hasPrefix("--offset=") })?.dropFirst("--offset=".count) {
+    let parts = raw.split(separator: ",").map { Int($0.trimmingCharacters(in: .whitespaces)) }
+    guard parts.count == 2, let dx = parts[0], let dy = parts[1] else { die(t("error.bad_offset")) }
+    offset = Point(x: dx, y: dy)
 }
 
 // 色。**既定は「端末なら付ける」。**パイプへ流したときに制御文字が混じると、
@@ -282,6 +292,8 @@ func fileURL(for input: Input, data: Data, suffix: String) throws -> URL {
 
 // `--text` は PDF のもの。ほかに渡されたら黙って飲まない（効かないつまみの線）。
 if wantsText && !(looksLikePDF(dataA) && looksLikePDF(dataB)) { die(t("error.text_flag")) }
+// `--offset` は画像のもの（PDF はページごとの紙なのでずらさない）。
+if offset != nil && !(looksLikeImage(dataA) && looksLikeImage(dataB) && !looksLikePDF(dataA)) { die(t("error.offset_flag")) }
 
 if detectKind(dataA) == .text && detectKind(dataB) == .text {
     // **効かないつまみを黙って飲まない。**--tolerance と --ignore-alpha は画素の話で、
@@ -545,8 +557,14 @@ do {
         }
     }
     let ia = try loadImage(at: ua), ib = try loadImage(at: ub)
-    result = comparePixels(a: ia.pixels, sizeA: ia.size, b: ib.pixels, sizeB: ib.size,
-                           bytesPerPixel: ia.bytesPerPixel, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+    if let offset {
+        // ずらして、重なる範囲だけ。寸法が違っても比べる。
+        result = comparePixels(a: ia.pixels, sizeA: ia.size, b: ib.pixels, sizeB: ib.size,
+                               bytesPerPixel: ia.bytesPerPixel, offset: offset, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+    } else {
+        result = comparePixels(a: ia.pixels, sizeA: ia.size, b: ib.pixels, sizeB: ib.size,
+                               bytesPerPixel: ia.bytesPerPixel, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+    }
     tone = toneDifference(a: ia.pixels, sizeA: ia.size, b: ib.pixels, sizeB: ib.size, bytesPerPixel: ia.bytesPerPixel)
 } catch {
     die("\(error)")
@@ -557,13 +575,19 @@ do {
 var relaxations: [String] = []
 if tolerance > 0 { relaxations.append(t("note.tolerance", tolerance)) }
 if ignoreAlpha { relaxations.append(t("note.ignore_alpha")) }
+// ずらしは「緩め」ではなく「置き方」なので、別の 1 行で言う。重なった範囲しか比べていない
+// ので数も（identical のときは重なりが無かった可能性もある）。
+let offsetNote: String? = offset.map { o in
+    if case .differ(let d) = result { return t("note.offset", o.x, o.y, d.total) }
+    return t("note.offset.plain", o.x, o.y)
+}
 let note = relaxations.isEmpty
     ? nil
     : t("note.compared_with", relaxations.joined(separator: t("note.separator")))
 
 if wantsJSON {
     print(JSONOutput.encode(JSONOutput.image(result, tolerance: tolerance, ignoreAlpha: ignoreAlpha,
-                                             tone: tone, redirects: redirectsJSON)))
+                                             offset: offset, tone: tone, redirects: redirectsJSON)))
     if case .identical = result { exit(0) }
     exit(wantsExitCode ? 1 : 0)
 }
@@ -572,6 +596,7 @@ switch result {
 case .identical:
     print(t("images.identical"))
     printRedirects()
+    if let offsetNote { print("  " + offsetNote) }
     if let note { print("  " + note) }
     exit(0)
 
@@ -589,6 +614,7 @@ case .differ(let d):
     }
     print(t("images.first", d.first.x, d.first.y))
     printRedirects()
+    if let offsetNote { print("  " + offsetNote) }
     if let note { print("  " + note) }
     // **全体が同じ向きにずれているなら、そう言う。**「44% が違う」の写真が、実は全画素が
     // +20 明るいだけだった ── 数だけでは圧縮のノイズとも細工とも区別がつかない。

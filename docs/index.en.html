@@ -136,7 +136,7 @@
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
           <h3>Images</h3>
-          <p>Every format ImageIO decodes — PNG, JPEG, HEIC, WebP, TIFF, PSD, thirty camera RAWs. Do they differ, what fraction of pixels, and where the first one is. Pixels are counted, so a one-pixel change is never rounded to “0.0%”. <code>--tolerance=N</code> lets small value drift count as the same; when it is on, the output says so — “identical” on its own always means byte-identical.</p>
+          <p>Every format ImageIO decodes — PNG, JPEG, HEIC, WebP, TIFF, PSD, thirty camera RAWs. Do they differ, what fraction of pixels, and where the first one is. Pixels are counted, so a one-pixel change is never rounded to “0.0%”. <code>--tolerance=N</code> lets small value drift count as the same; when it is on, the output says so — “identical” on its own always means byte-identical. <code>--offset=dx,dy</code> shifts the right image and compares the overlap only, so two screenshots whose header moved by a row answer “is the content the same?” instead of “49% differ”.</p>
 <pre class="ex"><span class="p">$</span> mrdiff --tolerance=2 a.png b.jpg
 <span class="out">Images differ — 1,560 of 390,000 pixels (0.4%)</span>
 <span class="out">  compared with ±2 per channel</span>

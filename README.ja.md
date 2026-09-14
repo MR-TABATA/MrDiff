@@ -104,12 +104,13 @@ mrdiff Font-1.otf Font-2.otf          # フォント ── どの字形が違�
 
 mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
-mrdiff --version                      # mrdiff 0.5.0
+mrdiff --version                      # mrdiff 0.6.0
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
 mrdiff --json a.bin b.bin             # 機械向け
 
 mrdiff --tolerance=2 a.png b.jpg      # チャンネルごとに ±2 までは同じとみなす
 mrdiff --ignore-alpha a.png b.png     # 色だけ比べる
+mrdiff --offset=0,-24 a.png b.png     # 右を 24 px 上にずらして、重なる範囲だけ比べる
 mrdiff --color=never a.log b.log      # 制御文字を出さない（パイプなら自動で切れる）
 ```
 
@@ -156,6 +157,20 @@ First difference at (0, 0)
 非可逆の再エンコードは、小さな tolerance では 0 にならない。上の組では最大の差が 36
 なので、`--tolerance=2` でも画素の半分は違ったまま。この数は「値がどれだけ散ったか」の
 物差しであって、そこまで緩めよという勧めではない。
+
+ヘッダーが 1 行ぶん違うスクリーンショット 2 枚は、画素で比べれば「49% が違う」で、その答えは
+役に立たない。`--offset=dx,dy` は右の絵を左の (dx, dy) に置いて、**重なる範囲だけ**比べる ──
+問いが「揃えたら中身は同じか」に変わる：
+
+```
+$ mrdiff --offset=0,-24 before.png after.png
+Images differ — 1,440 of 518,400 pixels (0.3%)
+First difference at (356, 260)
+  right shifted by (0, -24) — the 518,400 overlapping pixels only
+```
+
+ずらしを付ければ、寸法の違う画像も比べる（重なる範囲で）。出力は必ず、ずらしと、それで残った
+画素の数を言う ── それしか比べていないから。ずらしを見つけるのは自分の仕事。
 
 OS の ImageIO が読む形式は全部この方法で比べる。PNG と JPEG だけではない：PSD（統合画像
 として）、HEIC、AVIF、WebP、TIFF、GIF（1 コマ目）、それにカメラの RAW 約 30 種類。PDF 互換で
@@ -328,14 +343,14 @@ only in B   chapter-07.md
 ### JSON
 
 `--json` は 1 行の JSON だけを出す。訳さない。形は v0.1.0 から固定
-（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0、`pdf.text` と `pdf-text` は v0.5.0 で追加）：
+（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0、`pdf.text` と `pdf-text` は v0.5.0、`image.offset` は v0.6.0 で追加）：
 
 | キー | |
 | :--- | :--- |
 | `kind` | 何として比べたか：`text`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ）、`archive`（zip 2 つ）、`docx`、`font` |
 | `result` | `identical` か `differ`。画像は `size_mismatch` も。`--site` は、違いは無いが確認できなかったファイルがあれば `error` |
 | text | `changed`、`added`、`removed`。`changed` は置き換えられた塊を両側の大きいほうで数える ── 1 行消して 2 行足せば `changed: 2` |
-| image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
+| image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`--offset` を付けたときは `offset: {x, y}` が付き、`total` は重なった範囲の画素数になる。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
 | pdf | `pages_a`、`pages_b`、`dpi`、`text`（`{result, changed, added, removed, lines_a, lines_b}`。片方に文字が無ければ null）、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |
 | site / tree / dir / archive | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]`。`dir` と `archive` は両側を `only_a` / `only_b` と呼ぶ（`tree` は `only_local` / `only_remote`） |

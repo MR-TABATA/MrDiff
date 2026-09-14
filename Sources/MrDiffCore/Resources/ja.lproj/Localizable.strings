@@ -144,3 +144,10 @@
 "pdf.text.none"        = "比べる文字がありません（スキャンしたページ？）";
 "error.pdf_no_text"    = "片方の PDF に文字がありません（スキャンしたページ？）── --text 無しで比べてください";
 "error.text_flag"      = "--text は PDF のものです";
+
+/* ずらして比べる（画像）。 */
+"help.offset"          = "画像：右を左の (dx,dy) に置いて、重なる範囲だけ比べる";
+"note.offset"          = "右を (%d, %d) にずらして比較 ── 重なった %d 画素だけ";
+"note.offset.plain"    = "右を (%d, %d) にずらして比較";
+"error.bad_offset"     = "--offset は整数 2 つです: --offset=dx,dy";
+"error.offset_flag"    = "--offset は画像のものです";
