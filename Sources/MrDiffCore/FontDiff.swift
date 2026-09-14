@@ -70,6 +70,28 @@ public func compareFonts(_ a: Data, _ b: Data, cell: Int = 48) throws -> FontCom
                           compared: common.count, changed: changed, onlyA: onlyA, onlyB: onlyB, cell: cell)
 }
 
+/// GUI が字形を見せるための入口。**判定と同じ描き手**（同じ枠・同じ位置）で描くので、
+/// 「違う」と言った字形と、見せる字形が食い違わない。
+/// グレー 1 byte/px、`cell × cell`、白地に黒。開けなければ nil。
+public final class FontGlyphs {
+    private let font: LoadedFont
+    private let renderer: GlyphRenderer
+    public let cell: Int
+    public var name: String { font.name }
+    public var version: String? { font.version }
+
+    public init?(data: Data, cell: Int = 96) {
+        guard let f = LoadedFont(data: data, size: CGFloat(cell) * 0.6) else { return nil }
+        font = f
+        renderer = GlyphRenderer(cell: cell)
+        self.cell = cell
+    }
+
+    public func render(_ codepoint: UInt32) -> [UInt8] {
+        renderer.render(codepoint, with: font)
+    }
+}
+
 /// コードポイントを人に見せる形（`あ U+3042`）。制御文字や結合文字は U+ だけ。
 public func describeCodepoint(_ c: UInt32) -> String {
     let hex = String(format: "U+%04X", c)

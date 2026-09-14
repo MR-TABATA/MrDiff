@@ -106,10 +106,11 @@ public func looksLikePDF(_ data: Data) -> Bool {
 private let mmPerPoint = 25.4 / 72.0
 
 /// ページを白地の RGBA に描く。`dpi` は 72 が等倍（1 pt = 1 px）。
+/// GUI が見せる用に高い dpi で描き直すのにも使う（判定と同じ描き手で）。
 ///
 /// 回転（`/Rotate`）は PDFKit が面倒を見るので、`bounds(for: .cropBox)` の向きのまま描く。
 /// 透明は白で潰す ―― 紙に刷れば白なので、`ignoreAlpha` の出番が無い。
-func renderPDFPage(_ page: PDFPage, dpi: Int) throws -> DecodedImage {
+public func renderPDFPage(_ page: PDFPage, dpi: Int) throws -> DecodedImage {
     let box = page.bounds(for: .cropBox)
     let scale = Double(dpi) / 72.0
     let w = max(1, Int((box.width * scale).rounded(.up)))

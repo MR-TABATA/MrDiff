@@ -94,9 +94,40 @@ public func comparePixels(
     ignoreAlpha: Bool = false
 ) -> ImageComparison {
     guard sizeA == sizeB else { return .sizeMismatch(sizeA, sizeB) }
+    return compareOverlap(a: a, sizeA: sizeA, b: b, sizeB: sizeB, bytesPerPixel: bytesPerPixel,
+                          offset: Point(x: 0, y: 0), tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+}
 
-    let total = sizeA.width * sizeA.height
-    guard total > 0 else { return .identical }
+/// **ずらして比べる。** B を A の座標で `offset` の位置に置き、重なる矩形だけを比べる。
+///
+/// ヘッダーが 1 行ぶん違うスクリーンショット 2 枚は、そのままでは「全画素が違う」。
+/// 右を 1 行ぶんずらして重ねれば「中身は同じか」が言える。寸法が違っても比べる
+/// （重なる範囲の話なので）。重なりが無ければ `identical`（比べた画素が無い ── 呼ぶ側が
+/// `total` を見て言う）。数は重なった範囲の画素数、`first` は A の座標。
+public func comparePixels(
+    a: [UInt8], sizeA: Size,
+    b: [UInt8], sizeB: Size,
+    bytesPerPixel: Int,
+    offset: Point,
+    tolerance: Int = 0,
+    ignoreAlpha: Bool = false
+) -> ImageComparison {
+    compareOverlap(a: a, sizeA: sizeA, b: b, sizeB: sizeB, bytesPerPixel: bytesPerPixel,
+                   offset: offset, tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+}
+
+/// A の座標での、B と重なる矩形（x0, y0, x1, y1。x1 / y1 は含まない）。
+func overlapRect(sizeA: Size, sizeB: Size, offset: Point) -> (x0: Int, y0: Int, x1: Int, y1: Int) {
+    (max(0, offset.x), max(0, offset.y), min(sizeA.width, sizeB.width + offset.x), min(sizeA.height, sizeB.height + offset.y))
+}
+
+private func compareOverlap(
+    a: [UInt8], sizeA: Size, b: [UInt8], sizeB: Size, bytesPerPixel: Int,
+    offset: Point, tolerance: Int, ignoreAlpha: Bool
+) -> ImageComparison {
+    let o = overlapRect(sizeA: sizeA, sizeB: sizeB, offset: offset)
+    guard o.x1 > o.x0, o.y1 > o.y0 else { return .identical }
+    let total = (o.x1 - o.x0) * (o.y1 - o.y0)
 
     var changed = 0
     var first: Point? = nil
@@ -106,15 +137,17 @@ public func comparePixels(
     // ignoreAlpha は無視する（黙って 3 本目までにすると、別の意味になる）。
     let channels = (ignoreAlpha && bytesPerPixel == 4) ? 3 : bytesPerPixel
 
-    for y in 0..<sizeA.height {
-        let rowStart = y * sizeA.width * bytesPerPixel
-        for x in 0..<sizeA.width {
-            let i = rowStart + x * bytesPerPixel
+    for y in o.y0..<o.y1 {
+        let rowA = y * sizeA.width * bytesPerPixel
+        let rowB = (y - offset.y) * sizeB.width * bytesPerPixel
+        for x in o.x0..<o.x1 {
+            let i = rowA + x * bytesPerPixel
+            let j = rowB + (x - offset.x) * bytesPerPixel
             // 画素の差 ＝ チャンネル差の最大。tolerance を超えたら「違う」。
             // 最大差は全画素で取る（途中で抜けない）── 「いくつ緩めれば同じか」を言うため。
             var gap = 0
             for c in 0..<channels {
-                let d = abs(Int(a[i + c]) - Int(b[i + c]))
+                let d = abs(Int(a[i + c]) - Int(b[j + c]))
                 if d > gap { gap = d }
             }
             if gap > tolerance {
@@ -142,14 +175,33 @@ public func differingPixels(
     ignoreAlpha: Bool = false
 ) -> [UInt8]? {
     guard sizeA == sizeB else { return nil }
-    let total = sizeA.width * sizeA.height
-    var mask = [UInt8](repeating: 0, count: total)
+    return differingPixels(a: a, sizeA: sizeA, b: b, sizeB: sizeB, bytesPerPixel: bytesPerPixel,
+                           offset: Point(x: 0, y: 0), tolerance: tolerance, ignoreAlpha: ignoreAlpha)
+}
+
+/// ずらして比べたときの印。**A の座標・A の大きさ**で返し、重なっていない所は 0。
+public func differingPixels(
+    a: [UInt8], sizeA: Size,
+    b: [UInt8], sizeB: Size,
+    bytesPerPixel: Int,
+    offset: Point,
+    tolerance: Int = 0,
+    ignoreAlpha: Bool = false
+) -> [UInt8] {
+    var mask = [UInt8](repeating: 0, count: sizeA.width * sizeA.height)
+    let o = overlapRect(sizeA: sizeA, sizeB: sizeB, offset: offset)
+    guard o.x1 > o.x0, o.y1 > o.y0 else { return mask }
     let channels = (ignoreAlpha && bytesPerPixel == 4) ? 3 : bytesPerPixel
-    for p in 0..<total {
-        let i = p * bytesPerPixel
-        for c in 0..<channels where abs(Int(a[i + c]) - Int(b[i + c])) > tolerance {
-            mask[p] = 1
-            break
+    for y in o.y0..<o.y1 {
+        let rowA = y * sizeA.width * bytesPerPixel
+        let rowB = (y - offset.y) * sizeB.width * bytesPerPixel
+        for x in o.x0..<o.x1 {
+            let i = rowA + x * bytesPerPixel
+            let j = rowB + (x - offset.x) * bytesPerPixel
+            for c in 0..<channels where abs(Int(a[i + c]) - Int(b[j + c])) > tolerance {
+                mask[y * sizeA.width + x] = 1
+                break
+            }
         }
     }
     return mask

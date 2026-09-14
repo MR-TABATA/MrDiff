@@ -214,4 +214,44 @@ final class PixelDiffTests: XCTestCase {
                               b: [], sizeB: Size(width: 0, height: 0), bytesPerPixel: 4)
         XCTAssertEqual(r, .identical)
     }
+
+    // MARK: - ずらして比べる
+
+    /// 1 画素 1 バイト（グレー）の小さな絵で、ずらしの規則を固定する。
+    func test_ずらして重なる範囲だけを比べる() {
+        // A: 4×2、B: 2×2。B を A の (2, 0) に置くと、A の右半分と重なる。
+        let a: [UInt8] = [1, 2, 3, 4,
+                          5, 6, 7, 8]
+        let b: [UInt8] = [3, 4,
+                          7, 9]   // 右下だけ違う
+        let r = comparePixels(a: a, sizeA: Size(width: 4, height: 2), b: b, sizeB: Size(width: 2, height: 2),
+                              bytesPerPixel: 1, offset: Point(x: 2, y: 0))
+        guard case .differ(let d) = r else { return XCTFail("\(r)") }
+        XCTAssertEqual(d.total, 4, "重なった 2×2 だけ")
+        XCTAssertEqual(d.changed, 1)
+        XCTAssertEqual(d.first, Point(x: 3, y: 1), "A の座標で言う")
+        let mask = differingPixels(a: a, sizeA: Size(width: 4, height: 2), b: b, sizeB: Size(width: 2, height: 2),
+                                   bytesPerPixel: 1, offset: Point(x: 2, y: 0))
+        XCTAssertEqual(mask, [0, 0, 0, 0,
+                              0, 0, 0, 1], "A の大きさで、重なっていない所は 0")
+    }
+
+    func test_負のずらしと_重なりが無いとき() {
+        let a: [UInt8] = [1, 2, 3, 4]
+        let b: [UInt8] = [9, 1, 2, 3]
+        // B を (-1, 0) に置く ＝ B の 2 列目以降が A の 1 列目から重なる → 同じ
+        XCTAssertEqual(comparePixels(a: a, sizeA: Size(width: 4, height: 1), b: b, sizeB: Size(width: 4, height: 1),
+                                     bytesPerPixel: 1, offset: Point(x: -1, y: 0)), .identical)
+        // 重なりが無い → identical（比べた画素が無い）
+        XCTAssertEqual(comparePixels(a: a, sizeA: Size(width: 4, height: 1), b: b, sizeB: Size(width: 4, height: 1),
+                                     bytesPerPixel: 1, offset: Point(x: 10, y: 0)), .identical)
+    }
+
+    func test_ずらし0は従来と同じ答え() {
+        let a: [UInt8] = [1, 2, 3, 4], b: [UInt8] = [1, 9, 3, 4]
+        let plain = comparePixels(a: a, sizeA: Size(width: 2, height: 2), b: b, sizeB: Size(width: 2, height: 2), bytesPerPixel: 1)
+        let zero = comparePixels(a: a, sizeA: Size(width: 2, height: 2), b: b, sizeB: Size(width: 2, height: 2),
+                                 bytesPerPixel: 1, offset: Point(x: 0, y: 0))
+        XCTAssertEqual(plain, zero)
+    }
 }
