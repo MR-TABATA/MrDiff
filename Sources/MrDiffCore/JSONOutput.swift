@@ -44,7 +44,9 @@ public enum JSONOutput {
     }
 
     /// JSON / YAML の構造比較。`kind` は実際に読めた形式（`"json"` か `"yaml"`）。
-    /// `paths` は `dir` / `tree` の `rows` と同じ形（`{path, status}`）―― 一覧という点で同じもの。
+    /// `paths` は `dir` / `tree` の `rows` と同じ形（`{path, status}`）に、`before` / `after`
+    /// を足したもの ―― `added` に `before` は無く、`removed` に `after` は無い（キーごと出さない）。
+    /// 値は切らずに出す（`shortDescription` の省略は人向けの表示だけの話）。
     public static func structured(_ d: StructuredDiff, format: String, redirects: [Redirect] = []) -> [String: Any] {
         var o: [String: Any] = ["kind": format]
         if d.isIdentical {
@@ -55,7 +57,10 @@ public enum JSONOutput {
             o["added"] = d.added
             o["removed"] = d.removed
             o["paths"] = d.changes.map { c -> [String: Any] in
-                ["path": c.path, "status": c.kind.rawValue]
+                var row: [String: Any] = ["path": c.path, "status": c.kind.rawValue]
+                if let before = c.before { row["before"] = toJSONObject(before) }
+                if let after = c.after { row["after"] = toJSONObject(after) }
+                return row
             }
         }
         addRedirects(&o, redirects)
@@ -289,5 +294,17 @@ public enum JSONOutput {
     private static func addRedirects(_ o: inout [String: Any], _ rs: [Redirect]) {
         guard !rs.isEmpty else { return }
         o["redirected"] = rs.map { ["from": $0.from, "to": $0.to] }
+    }
+
+    /// `StructuredValue` を `JSONSerialization` に渡せる形へ戻す（`JSONStructured.parse` の逆）。
+    private static func toJSONObject(_ v: StructuredValue) -> Any {
+        switch v {
+        case .null: return NSNull()
+        case .bool(let b): return b
+        case .number(let n): return n
+        case .string(let s): return s
+        case .array(let items): return items.map(toJSONObject)
+        case .object(let entries): return entries.mapValues(toJSONObject)
+        }
     }
 }

@@ -13,7 +13,16 @@ public struct StructuredChange: Equatable {
     public enum Kind: String, Equatable, Sendable { case added, removed, changed }
     public let path: String   // ルート直下の変化は "" になりうる（表示側で "(root)" に読み替える）
     public let kind: Kind
-    public init(path: String, kind: Kind) { self.path = path; self.kind = kind }
+    /// その場所に A 側にあった値。`added` には無い（nil）。
+    public let before: StructuredValue?
+    /// その場所に B 側にあった値。`removed` には無い（nil）。
+    public let after: StructuredValue?
+    public init(path: String, kind: Kind, before: StructuredValue? = nil, after: StructuredValue? = nil) {
+        self.path = path
+        self.kind = kind
+        self.before = before
+        self.after = after
+    }
 }
 
 public struct StructuredDiff {
@@ -39,10 +48,10 @@ private func diffValues(_ a: StructuredValue, _ b: StructuredValue, path: String
     switch (a, b) {
     case let (.object(oa), .object(ob)):
         for key in oa.keys.sorted() where ob[key] == nil {
-            changes.append(StructuredChange(path: appendKey(path, key), kind: .removed))
+            changes.append(StructuredChange(path: appendKey(path, key), kind: .removed, before: oa[key]))
         }
         for key in ob.keys.sorted() where oa[key] == nil {
-            changes.append(StructuredChange(path: appendKey(path, key), kind: .added))
+            changes.append(StructuredChange(path: appendKey(path, key), kind: .added, after: ob[key]))
         }
         for key in oa.keys.sorted() where ob[key] != nil {
             diffValues(oa[key]!, ob[key]!, path: appendKey(path, key), into: &changes)
@@ -52,7 +61,7 @@ private func diffValues(_ a: StructuredValue, _ b: StructuredValue, path: String
     default:
         // 種類そのものが変わった（object → array、string → number、…）。
         // 中を掘っても意味が無いので、その場所 1 件の "changed" とだけ言う。
-        changes.append(StructuredChange(path: path, kind: .changed))
+        changes.append(StructuredChange(path: path, kind: .changed, before: a, after: b))
     }
 }
 
@@ -65,9 +74,9 @@ private func diffArrays(_ a: [StructuredValue], _ b: [StructuredValue], path: St
         case .equal:
             continue
         case let .delete(left, count):
-            for i in 0..<count { changes.append(StructuredChange(path: appendIndex(path, left + i), kind: .removed)) }
+            for i in 0..<count { changes.append(StructuredChange(path: appendIndex(path, left + i), kind: .removed, before: a[left + i])) }
         case let .insert(right, count):
-            for i in 0..<count { changes.append(StructuredChange(path: appendIndex(path, right + i), kind: .added)) }
+            for i in 0..<count { changes.append(StructuredChange(path: appendIndex(path, right + i), kind: .added, after: b[right + i])) }
         case let .replace(left, leftCount, right, rightCount):
             // **`changed` は左右の多いほう**（`TextDiff.changed` と同じ定義 ―― README で
             // 一度揃えた数え方を、種類が増えたからと崩さない）。共通する頭からペアで再帰し、
@@ -77,9 +86,9 @@ private func diffArrays(_ a: [StructuredValue], _ b: [StructuredValue], path: St
                 diffValues(a[left + i], b[right + i], path: appendIndex(path, right + i), into: &changes)
             }
             if leftCount > rightCount {
-                for i in common..<leftCount { changes.append(StructuredChange(path: appendIndex(path, left + i), kind: .removed)) }
+                for i in common..<leftCount { changes.append(StructuredChange(path: appendIndex(path, left + i), kind: .removed, before: a[left + i])) }
             } else if rightCount > leftCount {
-                for i in common..<rightCount { changes.append(StructuredChange(path: appendIndex(path, right + i), kind: .added)) }
+                for i in common..<rightCount { changes.append(StructuredChange(path: appendIndex(path, right + i), kind: .added, after: b[right + i])) }
             }
         }
     }

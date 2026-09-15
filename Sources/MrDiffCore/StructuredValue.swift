@@ -86,3 +86,92 @@ private func isTopLevelStructured(_ v: StructuredValue) -> Bool {
     case .null, .bool, .number, .string: return false
     }
 }
+
+// MARK: - 短い表示
+
+/// 1 つの値を、1 行に収まる長さの文字列にする。**言葉を持たない**（`[3 items]` のような
+/// 英単語を埋め込むと、日本語の行に混じる ―― ここは訳の外なので）。中身はコンパクトな
+/// JSON そのもの：スカラはそのまま、入れ子はキーをソートして詰める（並びは差分に出さない
+/// のと同じ理由）。長ければ `maxLength` で切って `…` を足す。
+public func shortDescription(_ v: StructuredValue, maxLength: Int = 60) -> String {
+    let full = compactJSON(v)
+    guard full.count > maxLength else { return full }
+    return String(full.prefix(maxLength)) + "…"
+}
+
+private func compactJSON(_ v: StructuredValue) -> String {
+    switch v {
+    case .null:
+        return "null"
+    case .bool(let b):
+        return b ? "true" : "false"
+    case .number(let n):
+        return numberString(n)
+    case .string(let s):
+        return quoteJSON(s)
+    case .array(let items):
+        return "[" + items.map(compactJSON).joined(separator: ",") + "]"
+    case .object(let entries):
+        let keys = entries.keys.sorted()
+        return "{" + keys.map { quoteJSON($0) + ":" + compactJSON(entries[$0]!) }.joined(separator: ",") + "}"
+    }
+}
+
+private func numberString(_ n: Double) -> String {
+    if n.truncatingRemainder(dividingBy: 1) == 0, abs(n) < 1e15 {
+        return String(Int64(n))
+    }
+    return String(n)
+}
+
+// MARK: - 正規化した整形（キーの並びを揃えたテキスト）
+
+/// キーをソートして 2 スペースで整形した JSON テキスト。**行 diff の入力に使うためのもの**
+/// ―― GUI 側（MrkDiff）が、構造で判定しつつも見せ方は行 diff のまま使いたいときに要る。
+/// 両側をこれに通してから比べれば、「キーの順だけ違う」は同じ文字列になって差分に出ない。
+/// 数値・文字列の書き方も揃える（`1` と `1.0` はどちらも `1` になる）ので、書式の揺れも消える。
+public func prettyPrint(_ v: StructuredValue, indent: Int = 0) -> String {
+    let pad = String(repeating: "  ", count: indent)
+    switch v {
+    case .null:
+        return "null"
+    case .bool(let b):
+        return b ? "true" : "false"
+    case .number(let n):
+        return numberString(n)
+    case .string(let s):
+        return quoteJSON(s)
+    case .array(let items):
+        guard !items.isEmpty else { return "[]" }
+        let childPad = String(repeating: "  ", count: indent + 1)
+        let body = items.map { childPad + prettyPrint($0, indent: indent + 1) }.joined(separator: ",\n")
+        return "[\n" + body + "\n" + pad + "]"
+    case .object(let entries):
+        guard !entries.isEmpty else { return "{}" }
+        let childPad = String(repeating: "  ", count: indent + 1)
+        let keys = entries.keys.sorted()
+        let body = keys.map { childPad + quoteJSON($0) + ": " + prettyPrint(entries[$0]!, indent: indent + 1) }.joined(separator: ",\n")
+        return "{\n" + body + "\n" + pad + "}"
+    }
+}
+
+private func quoteJSON(_ s: String) -> String {
+    var out = "\""
+    for scalar in s.unicodeScalars {
+        switch scalar {
+        case "\"": out += "\\\""
+        case "\\": out += "\\\\"
+        case "\n": out += "\\n"
+        case "\t": out += "\\t"
+        case "\r": out += "\\r"
+        default:
+            if scalar.value < 0x20 {
+                out += String(format: "\\u%04x", scalar.value)
+            } else {
+                out.unicodeScalars.append(scalar)
+            }
+        }
+    }
+    out += "\""
+    return out
+}

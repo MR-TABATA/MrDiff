@@ -51,7 +51,7 @@ final class JSONOutputTests: XCTestCase {
         let b = JSONStructured.parse(Data(#"{"a":2,"b":3}"#.utf8))!
         let d = compareStructured(a, b)
         let s = JSONOutput.encode(JSONOutput.structured(d, format: "json"))
-        XCTAssertEqual(s, #"{"added":1,"changed":1,"kind":"json","paths":[{"path":"b","status":"added"},{"path":"a","status":"changed"}],"removed":0,"result":"differ"}"#)
+        XCTAssertEqual(s, #"{"added":1,"changed":1,"kind":"json","paths":[{"after":3,"path":"b","status":"added"},{"after":2,"before":1,"path":"a","status":"changed"}],"removed":0,"result":"differ"}"#)
     }
 
     func testStructuredIdenticalOmitsCounts() {

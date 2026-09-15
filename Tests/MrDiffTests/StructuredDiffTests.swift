@@ -36,24 +36,24 @@ final class StructuredDiffTests: XCTestCase {
         XCTAssertEqual(d.added, 1)
         XCTAssertEqual(d.changed, 0)
         XCTAssertEqual(d.removed, 0)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "b", kind: .added)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "b", kind: .added, after: .number(2))])
     }
 
     func testRemovedKey() {
         let d = diff(#"{"a":1,"b":2}"#, #"{"a":1}"#)
         XCTAssertEqual(d.removed, 1)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "b", kind: .removed)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "b", kind: .removed, before: .number(2))])
     }
 
     func testChangedValue() {
         let d = diff(#"{"a":1}"#, #"{"a":2}"#)
         XCTAssertEqual(d.changed, 1)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "a", kind: .changed)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "a", kind: .changed, before: .number(1), after: .number(2))])
     }
 
     func testNestedPathUsesDots() {
         let d = diff(#"{"user":{"name":"a"}}"#, #"{"user":{"name":"b"}}"#)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "user.name", kind: .changed)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "user.name", kind: .changed, before: .string("a"), after: .string("b"))])
     }
 
     // MARK: - 配列
@@ -64,36 +64,40 @@ final class StructuredDiffTests: XCTestCase {
 
     func testAppendedElement() {
         let d = diff("[1,2,3]", "[1,2,3,4]")
-        XCTAssertEqual(d.changes, [StructuredChange(path: "[3]", kind: .added)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "[3]", kind: .added, after: .number(4))])
     }
 
     /// **途中への挿入は、後ろ全部を「変更」にしない。**LineDiff を再利用している効き目。
     func testInsertionInTheMiddleDoesNotShiftEverythingElse() {
         let d = diff("[1,2,3]", "[1,99,2,3]")
-        XCTAssertEqual(d.changes, [StructuredChange(path: "[1]", kind: .added)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "[1]", kind: .added, after: .number(99))])
     }
 
     func testRemovedElement() {
         let d = diff("[1,2,3]", "[1,3]")
-        XCTAssertEqual(d.changes, [StructuredChange(path: "[1]", kind: .removed)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "[1]", kind: .removed, before: .number(2))])
     }
 
     func testArrayOfObjectsDiffsByIndex() {
         let d = diff(#"[{"id":1,"n":"a"},{"id":2,"n":"b"}]"#,
                      #"[{"id":1,"n":"a"},{"id":2,"n":"c"}]"#)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "[1].n", kind: .changed)])
+        XCTAssertEqual(d.changes, [StructuredChange(path: "[1].n", kind: .changed, before: .string("b"), after: .string("c"))])
     }
 
     // MARK: - 種類が変わる
 
     func testTypeChangeIsOneChangedNotACascade() {
         let d = diff(#"{"a":{"x":1,"y":2}}"#, #"{"a":[1,2]}"#)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "a", kind: .changed)])
+        XCTAssertEqual(d.changes, [StructuredChange(
+            path: "a", kind: .changed,
+            before: .object(["x": .number(1), "y": .number(2)]), after: .array([.number(1), .number(2)]))])
     }
 
     func testRootTypeChangeUsesEmptyPath() {
         let d = diff("[1,2,3]", #"{"a":1}"#)
-        XCTAssertEqual(d.changes, [StructuredChange(path: "", kind: .changed)])
+        XCTAssertEqual(d.changes, [StructuredChange(
+            path: "", kind: .changed,
+            before: .array([.number(1), .number(2), .number(3)]), after: .object(["a": .number(1)]))])
     }
 
     // MARK: - 数値・真偽・null
@@ -132,5 +136,49 @@ final class StructuredDiffTests: XCTestCase {
     func testArrayIsDetectedAsStructured() {
         let r = parseStructured(Data("[1,2,3]".utf8))
         XCTAssertEqual(r?.1, "json")
+    }
+
+    // MARK: - shortDescription（一覧に出す「変更前 → 変更後」の値）
+
+    func testShortDescriptionOfScalars() {
+        XCTAssertEqual(shortDescription(.null), "null")
+        XCTAssertEqual(shortDescription(.bool(true)), "true")
+        XCTAssertEqual(shortDescription(.number(42)), "42")
+        XCTAssertEqual(shortDescription(.number(1.5)), "1.5")
+        XCTAssertEqual(shortDescription(.string("hi")), #""hi""#)
+    }
+
+    func testShortDescriptionOfContainersIsCompactJSON() {
+        XCTAssertEqual(shortDescription(.array([.number(1), .number(2), .number(3)])), "[1,2,3]")
+        XCTAssertEqual(shortDescription(.object(["b": .number(2), "a": .number(1)])), #"{"a":1,"b":2}"#)
+    }
+
+    /// 長い値は切って `…` を足す。**単語は混ぜない**（訳の外なので `[N items]` のような
+    /// 英単語は使えない ── 中身を JSON のまま切るだけ）。
+    func testShortDescriptionTruncatesLongValues() {
+        let long = StructuredValue.string(String(repeating: "x", count: 100))
+        let s = shortDescription(long, maxLength: 20)
+        XCTAssertEqual(s.count, 21) // 20 文字 + "…"
+        XCTAssertTrue(s.hasSuffix("…"))
+    }
+
+    // MARK: - prettyPrint（GUI の行 diff に渡す、キーの並びを揃えたテキスト）
+
+    func testPrettyPrintSortsKeys() {
+        XCTAssertEqual(prettyPrint(json(#"{"b":2,"a":1}"#)), prettyPrint(json(#"{"a":1,"b":2}"#)))
+    }
+
+    /// **本丸。**キーの並びだけ違う 2 本を `prettyPrint` に通してから行 diff に掛けると、
+    /// 同じテキストになって差分が出ない ── MrkDiff がこれで「見慣れた 2 画面テキスト」を保ったまま
+    /// 「キーの順は無視する」を守る。
+    func testPrettyPrintedTextsAreIdenticalWhenOnlyKeyOrderDiffers() {
+        let a = prettyPrint(json(#"{"name":"mrdiff","version":"1.0"}"#))
+        let b = prettyPrint(json(#"{"version":"1.0","name":"mrdiff"}"#))
+        XCTAssertTrue(compareText(a, b).isIdentical)
+    }
+
+    func testPrettyPrintIsReadableMultiLine() {
+        let s = prettyPrint(json(#"{"a":1,"list":[1,2]}"#))
+        XCTAssertEqual(s, "{\n  \"a\": 1,\n  \"list\": [\n    1,\n    2\n  ]\n}")
     }
 }

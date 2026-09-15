@@ -92,19 +92,25 @@ struct Out {
     }
 }
 
-/// JSON / YAML の構造差分を並べる。**行番号の代わりにパス**（`user.name` / `items[2]`）。
-/// 行 diff の `-` / `+` と同じ記号を使い、変わった場所（削除・追加のどちらでもない）だけ
-/// `~` を足す ―― 3 つ目の状態なので、既存の赤 / 緑とは別の色（未使用だった cyan）を当てる。
+/// JSON / YAML の構造差分を並べる。**行番号の代わりにパス**（`user.name` / `items[2]`）、
+/// 行の中身の代わりに値。行 diff の `-` / `+` と同じ記号を使い、変わった場所（削除・追加の
+/// どちらでもない）だけ `~` を足す ―― 3 つ目の状態なので、既存の赤 / 緑とは別の色
+/// （未使用だった cyan）を当てる。値は 1 行に収まる長さへ丸める（`shortDescription`）――
+/// パスだけでは「どこが」までしか言えず、「一覧だけでは何が何だか分からない」の穴になる。
 func renderStructured(_ d: StructuredDiff, style s: Style, into out: inout Out) {
     for c in d.changes {
         let label = c.path.isEmpty ? t("structured.root") : c.path
         switch c.kind {
         case .removed:
-            out.line("\(s.red) - \(label)\(s.reset)")
+            let value = c.before.map { shortDescription($0) } ?? ""
+            out.line("\(s.red) - \(label): \(value)\(s.reset)")
         case .added:
-            out.line("\(s.green) + \(label)\(s.reset)")
+            let value = c.after.map { shortDescription($0) } ?? ""
+            out.line("\(s.green) + \(label): \(value)\(s.reset)")
         case .changed:
-            out.line("\(s.cyan) ~ \(label)\(s.reset)")
+            let before = c.before.map { shortDescription($0) } ?? "?"
+            let after = c.after.map { shortDescription($0) } ?? "?"
+            out.line("\(s.cyan) ~ \(label): \(before) → \(after)\(s.reset)")
         }
     }
 }
