@@ -109,7 +109,7 @@ mrdiff Font-1.otf Font-2.otf          # fonts — which glyphs render differentl
 
 mrdiff --help                         # every option, one line each
 mrdiff --help --lang=ja               # the same in Japanese
-mrdiff --version                      # mrdiff 0.7.0
+mrdiff --version                      # mrdiff 0.7.1
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff --json a.bin b.bin             # machine readable
 
@@ -156,17 +156,19 @@ different line does not either.
 ```
 $ mrdiff config.json config-new.json
 1 changed, 2 added, 0 removed
- + extra
- + items[3]
- ~ version
+ + extra: "new"
+ + items[3]: 4
+ ~ version: "1.0" → "1.1"
 ```
 
-`~` is a changed value, `+` / `-` are added/removed keys or array elements. The
-path uses `.` for object keys and `[i]` for array positions — `services.web.ports[1]`.
-Reordering an array still counts as a change at the position that actually
-differs; only a full-array reorder with the exact same elements is spared
-(the diff runs on the array the same way the line diff runs on lines, so an
-insertion in the middle does not turn everything after it into noise).
+`~` is a changed value, `+` / `-` are added/removed keys or array elements, each
+with the value alongside it (long values are cut with a trailing `…`; nothing
+is cut in `--json`, below). The path uses `.` for object keys and `[i]` for
+array positions — `services.web.ports[1]`. Reordering an array still counts as
+a change at the position that actually differs; only a full-array reorder with
+the exact same elements is spared (the diff runs on the array the same way the
+line diff runs on lines, so an insertion in the middle does not turn everything
+after it into noise).
 
 YAML support is a deliberate subset: block and flow mappings/sequences, plain
 and quoted scalars, comments. Anchors/aliases (`&` `*`), tags (`!!str`), block
@@ -394,14 +396,14 @@ Nothing is filtered — `.DS_Store` counts, as it does for `diff -r`.
 ### JSON
 
 `--json` prints one line of JSON and nothing else. It is never translated,
-and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `archive` / `docx` / `font` in v0.4.0, `pdf.text` and `pdf-text` in v0.5.0, `image.offset` in v0.6.0, `json` / `yaml` in v0.7.0):
+and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `archive` / `docx` / `font` in v0.4.0, `pdf.text` and `pdf-text` in v0.5.0, `image.offset` in v0.6.0, `json` / `yaml` in v0.7.0, `before` / `after` inside `json` / `yaml` in v0.7.1):
 
 | key | |
 | :--- | :--- |
 | `kind` | what it was compared as: `text`, `json`, `yaml`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`), `dir` (two folders), `archive` (two zips), `docx`, `font` |
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
-| json / yaml | `changed`, `added`, `removed` (same counting rule as text, applied per changed value/key/array element instead of per line), and `paths: [{path, status}]` where `status` is `changed` / `added` / `removed` and `path` is `user.name` / `items[2]` style. Two files of different formats that both parse (one JSON, one YAML) are still compared; `kind` names whichever format the first file parsed as |
+| json / yaml | `changed`, `added`, `removed` (same counting rule as text, applied per changed value/key/array element instead of per line), and `paths: [{path, status, before, after}]` where `status` is `changed` / `added` / `removed` and `path` is `user.name` / `items[2]` style. `before` is absent for `added`, `after` is absent for `removed`; both are the real value, unabridged (the `…` truncation in the human output does not apply here). Two files of different formats that both parse (one JSON, one YAML) are still compared; `kind` names whichever format the first file parsed as |
 | image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict. `offset: {x, y}` appears when `--offset` was given, and then `total` counts the overlap only. `tone_shift` is the mean signed difference B − A per channel — a photo that is "44% different" because it was exported brighter shows up here as `[21.3, 18.6, 17.7]` |
 | pdf | `pages_a`, `pages_b`, `dpi`, `text` (`{result, changed, added, removed, lines_a, lines_b}`, or null when a side has no text), and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |

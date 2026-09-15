@@ -107,7 +107,7 @@ mrdiff Font-1.otf Font-2.otf          # フォント ── どの字形が違�
 
 mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
-mrdiff --version                      # mrdiff 0.7.0
+mrdiff --version                      # mrdiff 0.7.1
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
 mrdiff --json a.bin b.bin             # 機械向け
 
@@ -151,12 +151,13 @@ $ mrdiff a.log b.log
 ```
 $ mrdiff config.json config-new.json
 1 changed, 2 added, 0 removed
- + extra
- + items[3]
- ~ version
+ + extra: "new"
+ + items[3]: 4
+ ~ version: "1.0" → "1.1"
 ```
 
-`~` は値の変更、`+` / `-` はキーや配列要素の追加・削除。パスはオブジェクトのキーを
+`~` は値の変更、`+` / `-` はキーや配列要素の追加・削除で、どちらも値を添えて言う
+（長い値は末尾を `…` で切る。下の `--json` では切らない）。パスはオブジェクトのキーを
 `.`、配列の位置を `[i]` で表す ── `services.web.ports[1]`。配列の並び替えは、実際に
 違う位置だけを変更として言う（同じ要素の並び替えだけなら変わらない ── 行の差分が
 行に対してやっていることを、配列の要素に対してもやっている。途中への挿入で後ろ全部が
@@ -370,14 +371,14 @@ only in B   chapter-07.md
 ### JSON
 
 `--json` は 1 行の JSON だけを出す。訳さない。形は v0.1.0 から固定
-（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0、`pdf.text` と `pdf-text` は v0.5.0、`image.offset` は v0.6.0、`json` / `yaml` は v0.7.0 で追加）：
+（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0、`pdf.text` と `pdf-text` は v0.5.0、`image.offset` は v0.6.0、`json` / `yaml` は v0.7.0、`json` / `yaml` の中の `before` / `after` は v0.7.1 で追加）：
 
 | キー | |
 | :--- | :--- |
 | `kind` | 何として比べたか：`text`、`json`、`yaml`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ）、`archive`（zip 2 つ）、`docx`、`font` |
 | `result` | `identical` か `differ`。画像は `size_mismatch` も。`--site` は、違いは無いが確認できなかったファイルがあれば `error` |
 | text | `changed`、`added`、`removed`。`changed` は置き換えられた塊を両側の大きいほうで数える ── 1 行消して 2 行足せば `changed: 2` |
-| json / yaml | `changed`、`added`、`removed`（text と同じ数え方を、行ではなく値・キー・配列要素ごとに当てる）、`paths: [{path, status}]`（`status` は `changed` / `added` / `removed`、`path` は `user.name` や `items[2]` の形）。形式が食い違う 2 本（片方 JSON、片方 YAML）でも両方読めれば比べる ── `kind` は 1 本目が読めた形式の名前 |
+| json / yaml | `changed`、`added`、`removed`（text と同じ数え方を、行ではなく値・キー・配列要素ごとに当てる）、`paths: [{path, status, before, after}]`（`status` は `changed` / `added` / `removed`、`path` は `user.name` や `items[2]` の形）。`added` に `before` は無く、`removed` に `after` は無い。値は切らずに出す（人向けの出力にある `…` の省略はここには効かない）。形式が食い違う 2 本（片方 JSON、片方 YAML）でも両方読めれば比べる ── `kind` は 1 本目が読めた形式の名前 |
 | image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`--offset` を付けたときは `offset: {x, y}` が付き、`total` は重なった範囲の画素数になる。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
 | pdf | `pages_a`、`pages_b`、`dpi`、`text`（`{result, changed, added, removed, lines_a, lines_b}`。片方に文字が無ければ null）、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |

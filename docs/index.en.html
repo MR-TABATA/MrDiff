@@ -167,12 +167,12 @@
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
           <h3>JSON and YAML</h3>
-          <p>Compared as data, not lines, when both sides parse: which keys, values, and array elements changed — reordering the keys is not one of them. An element inserted in the middle of an array does not turn everything after it into noise, the same guarantee the line diff gives a file with one new line. YAML is read as a deliberate subset (block and flow mappings/sequences, quoted and plain scalars, comments); anchors, tags, block scalars, and multi-document files fall back to the line diff rather than being read wrong.</p>
+          <p>Compared as data, not lines, when both sides parse: which keys, values, and array elements changed, with the value alongside — reordering the keys is not one of them. An element inserted in the middle of an array does not turn everything after it into noise, the same guarantee the line diff gives a file with one new line. YAML is read as a deliberate subset (block and flow mappings/sequences, quoted and plain scalars, comments); anchors, tags, block scalars, and multi-document files fall back to the line diff rather than being read wrong.</p>
 <pre class="ex"><span class="p">$</span> mrdiff config.json config-new.json
 <span class="out">1 changed, 2 added, 0 removed</span>
-<span class="out"> + extra</span>
-<span class="out"> + items[3]</span>
-<span class="out"> ~ version</span></pre>
+<span class="out"> + extra: "new"</span>
+<span class="out"> + items[3]: 4</span>
+<span class="out"> ~ version: "1.0" → "1.1"</span></pre>
         </div>
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>

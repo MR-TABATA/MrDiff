@@ -167,12 +167,12 @@
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
           <h3>JSON と YAML</h3>
-          <p>両方が読めたら、行ではなくデータとして比べる — どのキー・値・配列要素が変わったか。キーの並び替えはそこに入らない。配列の途中への挿入は、後ろ全部をノイズにしない — 行の差分が「1 行増えただけ」のファイルに対してしていることと同じ保証。YAML は意図して絞った部分集合（ブロックとフロー、両方のマッピング／シーケンス、素の・クォート付きのスカラ、コメント）を読む。アンカー、タグ、ブロックスカラ、1 ファイル中の複数ドキュメントは、誤って読むより行の差分へ戻る。</p>
+          <p>両方が読めたら、行ではなくデータとして比べる — どのキー・値・配列要素が変わったか、値も添えて言う。キーの並び替えはそこに入らない。配列の途中への挿入は、後ろ全部をノイズにしない — 行の差分が「1 行増えただけ」のファイルに対してしていることと同じ保証。YAML は意図して絞った部分集合（ブロックとフロー、両方のマッピング／シーケンス、素の・クォート付きのスカラ、コメント）を読む。アンカー、タグ、ブロックスカラ、1 ファイル中の複数ドキュメントは、誤って読むより行の差分へ戻る。</p>
 <pre class="ex"><span class="p">$</span> mrdiff config.json config-new.json
 <span class="out">1 changed, 2 added, 0 removed</span>
-<span class="out"> + extra</span>
-<span class="out"> + items[3]</span>
-<span class="out"> ~ version</span></pre>
+<span class="out"> + extra: "new"</span>
+<span class="out"> + items[3]: 4</span>
+<span class="out"> ~ version: "1.0" → "1.1"</span></pre>
         </div>
         <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
