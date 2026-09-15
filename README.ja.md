@@ -107,7 +107,7 @@ mrdiff Font-1.otf Font-2.otf          # フォント ── どの字形が違�
 
 mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
-mrdiff --version                      # mrdiff 0.6.0
+mrdiff --version                      # mrdiff 0.7.0
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
 mrdiff --json a.bin b.bin             # 機械向け
 
@@ -370,7 +370,7 @@ only in B   chapter-07.md
 ### JSON
 
 `--json` は 1 行の JSON だけを出す。訳さない。形は v0.1.0 から固定
-（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0、`pdf.text` と `pdf-text` は v0.5.0、`image.offset` は v0.6.0 で追加）：
+（`pdf` は v0.2.0、`dir` は v0.3.0、`archive` / `docx` / `font` は v0.4.0、`pdf.text` と `pdf-text` は v0.5.0、`image.offset` は v0.6.0、`json` / `yaml` は v0.7.0 で追加）：
 
 | キー | |
 | :--- | :--- |

@@ -165,6 +165,16 @@
           <p>行の差分に、文字単位のハイライト。動いた 1 文字に印が付く — 行ごと赤く塗るだけでは足りない。行番号は左右 2 列。消えた 7 行目と増えた 7 行目は同じ行ではない。</p>
         </div>
         <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+          <h3>JSON と YAML</h3>
+          <p>両方が読めたら、行ではなくデータとして比べる — どのキー・値・配列要素が変わったか。キーの並び替えはそこに入らない。配列の途中への挿入は、後ろ全部をノイズにしない — 行の差分が「1 行増えただけ」のファイルに対してしていることと同じ保証。YAML は意図して絞った部分集合（ブロックとフロー、両方のマッピング／シーケンス、素の・クォート付きのスカラ、コメント）を読む。アンカー、タグ、ブロックスカラ、1 ファイル中の複数ドキュメントは、誤って読むより行の差分へ戻る。</p>
+<pre class="ex"><span class="p">$</span> mrdiff config.json config-new.json
+<span class="out">1 changed, 2 added, 0 removed</span>
+<span class="out"> + extra</span>
+<span class="out"> + items[3]</span>
+<span class="out"> ~ version</span></pre>
+        </div>
+        <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
           <h3>URL とクリップボード</h3>
           <p><code>mrdiff https://a https://b</code> は両方を取ってきて、サーバが返したものを比べる。<code>--clipboard</code> は、いまコピーしたもの — 文字が無ければスクリーンショット — をファイルや URL と比べる。何も保存せずに「さっきのと同じ？」が聞ける。</p>
@@ -255,8 +265,8 @@
           <p>JavaScript は動かさないし描画もしないので、ブラウザで見える画面と答えが違うことがある。そこをごまかすと、無い違いを「違う」と言う道具になる。</p>
         </div>
         <div class="card">
-          <h3>Markdown や JSON は、テキストとして比べる</h3>
-          <p>行の文字列を比べる。整形を変えただけでも違いに数える。<code>**強調**</code> を外した、キーの順番を変えた、といった「意味は同じ」を同じと言うのは、この版の仕事の外。</p>
+          <h3>Markdown は、テキストとして比べる</h3>
+          <p>行の文字列を比べる。整形を変えただけでも違いに数える。<code>**強調**</code> を外した「意味は同じ」を同じと言うのは、この版の仕事の外。（JSON と YAML は例外 — 上の「JSON と YAML」を見る）</p>
         </div>
         <div class="card">
           <h3><code>--site</code> は、git に無いファイルを見られない</h3>
@@ -280,6 +290,7 @@
 <span class="p">$</span> <span class="cmd">brew update &amp;&amp; brew upgrade mrdiff</span>
 
 <span class="c"># あとは</span>
+<span class="p">$</span> <span class="cmd">mrdiff a.json b.json</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.png b.png</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.pdf b.pdf</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.bin b.bin</span>

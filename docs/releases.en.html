@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrDiff — Release history</title>
-  <meta name="description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.6.0.">
+  <meta name="description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.7.0.">
 
   <meta property="og:title" content="MrDiff — Release history">
-  <meta property="og:description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.6.0.">
+  <meta property="og:description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.7.0.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.en.html">
   <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
@@ -61,18 +61,22 @@
   <header class="rel-head">
     <div class="wrap">
       <div class="kicker">Release history</div>
-      <h1>Eight releases in three days.</h1>
-      <p class="lead">From the first release on 12 September 2026 to v0.6.0 two days later. It shipped comparing text, images and binaries; a day later it compared PDFs and told you where on the page, then two folders, then archives, Word documents and fonts, then the text of a PDF.</p>
+      <h1>Nine releases in four days.</h1>
+      <p class="lead">From the first release on 12 September 2026 to v0.7.0 three days later. It shipped comparing text, images and binaries; a day later it compared PDFs and told you where on the page, then two folders, then archives, Word documents and fonts, then the text of a PDF, then a shifted image, then JSON and YAML as data instead of lines.</p>
     </div>
   </header>
 
   <div class="wrap">
     <section class="rel-era">
       <div class="rel-era-head">
-        <h2>Newest first</h2><span class="span">v0.6.0 ← v0.1.0 · 14 – 12 Sep 2026</span>
+        <h2>Newest first</h2><span class="span">v0.7.0 ← v0.1.0 · 15 – 12 Sep 2026</span>
         <p>The CLI is free and MIT. Each release is a universal binary (Apple silicon + Intel) in a zip, and the Homebrew tap points at it.</p>
       </div>
 
+      <div class="rel-row m">
+        <span class="v">0.7.0</span><span class="d">15 Sep</span>
+        <span class="t"><strong>JSON and YAML, structurally.</strong> Two files that both parse as JSON, or both as a deliberate YAML subset, are compared as data — key order stops counting as a change, and an element inserted in the middle of an array does not turn everything after it into noise. Anything that does not parse (anchors, tags, block scalars, multiple documents, or plain text) falls back to the line diff rather than being read wrong. <code>--json</code> gains <code>kind: "json"</code> / <code>"yaml"</code> and a <code>paths</code> array</span>
+      </div>
       <div class="rel-row">
         <span class="v">0.6.0</span><span class="d">14 Sep</span>
         <span class="t"><code>--offset=dx,dy</code> for images: place the right image on the left one and compare the overlap only — two screenshots whose header moved by a row answer “is the content the same?”. Different sizes are compared over the overlap. The core also exposes its page and glyph renderers, so a viewer can draw with the same hand that judges</span>
@@ -112,7 +116,7 @@
       <ul>
           <li>Dates are the GitHub release dates (JST). Version numbers follow <code>--version</code> and the tag.</li>
           <li>Every release here is published with a downloadable zip; there are no tag-only entries.</li>
-          <li>The JSON shape is fixed from v0.1.0 on. v0.2.0 added the <code>pdf</code> kind, v0.3.0 <code>dir</code>, v0.4.0 <code>archive</code> / <code>docx</code> / <code>font</code>, v0.5.0 <code>text</code> inside <code>pdf</code> and the <code>pdf-text</code> kind, v0.6.0 <code>offset</code> inside <code>image</code>; nothing existing changed.</li>
+          <li>The JSON shape is fixed from v0.1.0 on. v0.2.0 added the <code>pdf</code> kind, v0.3.0 <code>dir</code>, v0.4.0 <code>archive</code> / <code>docx</code> / <code>font</code>, v0.5.0 <code>text</code> inside <code>pdf</code> and the <code>pdf-text</code> kind, v0.6.0 <code>offset</code> inside <code>image</code>, v0.7.0 the <code>json</code> / <code>yaml</code> kinds; nothing existing changed.</li>
       </ul>
     </aside>
   </div>

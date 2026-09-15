@@ -165,6 +165,16 @@
           <p>A line diff with a character-level highlight, so the one character that moved is marked — painting the whole line red is not enough. Two line-number columns, left and right: a deleted line 7 and an added line 7 are not the same line.</p>
         </div>
         <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+          <h3>JSON and YAML</h3>
+          <p>Compared as data, not lines, when both sides parse: which keys, values, and array elements changed — reordering the keys is not one of them. An element inserted in the middle of an array does not turn everything after it into noise, the same guarantee the line diff gives a file with one new line. YAML is read as a deliberate subset (block and flow mappings/sequences, quoted and plain scalars, comments); anchors, tags, block scalars, and multi-document files fall back to the line diff rather than being read wrong.</p>
+<pre class="ex"><span class="p">$</span> mrdiff config.json config-new.json
+<span class="out">1 changed, 2 added, 0 removed</span>
+<span class="out"> + extra</span>
+<span class="out"> + items[3]</span>
+<span class="out"> ~ version</span></pre>
+        </div>
+        <div class="card">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
           <h3>URLs and the clipboard</h3>
           <p><code>mrdiff https://a https://b</code> fetches both and compares what the server returned. <code>--clipboard</code> compares what you just copied — text, or a screenshot if there is no text — against a file or a URL. “Is this the same as before?” without saving anything first.</p>
@@ -255,8 +265,8 @@
           <p>No JavaScript is run and nothing is rendered, so the answer can differ from what a browser shows. Pretending otherwise would make a tool that claims differences where there are none.</p>
         </div>
         <div class="card">
-          <h3>Markdown and JSON are compared as text</h3>
-          <p>Line by line. Reformatting counts as a change. Saying that <code>**bold**</code> removed, or keys reordered, is “the same” is outside what this version does.</p>
+          <h3>Markdown is compared as text</h3>
+          <p>Line by line. Reformatting counts as a change — saying that <code>**bold**</code> removed is “the same” is outside what this version does. (JSON and YAML are the exception — see the JSON and YAML card above.)</p>
         </div>
         <div class="card">
           <h3><code>--site</code> cannot see files that are not in git</h3>
@@ -280,6 +290,7 @@
 <span class="p">$</span> <span class="cmd">brew update &amp;&amp; brew upgrade mrdiff</span>
 
 <span class="c"># then</span>
+<span class="p">$</span> <span class="cmd">mrdiff a.json b.json</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.png b.png</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.pdf b.pdf</span>
 <span class="p">$</span> <span class="cmd">mrdiff a.bin b.bin</span>

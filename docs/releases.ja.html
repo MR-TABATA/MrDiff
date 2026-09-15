@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrDiff — リリース履歴</title>
-  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.6.0 まで。">
+  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.7.0 まで。">
 
   <meta property="og:title" content="MrDiff — リリース履歴">
-  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.6.0 まで。">
+  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.7.0 まで。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.ja.html">
   <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
@@ -61,18 +61,22 @@
   <header class="rel-head">
     <div class="wrap">
       <div class="kicker">リリース履歴</div>
-      <h1>3 日で 8 つのリリース。</h1>
-      <p class="lead">2026 年 9 月 12 日の最初のリリースから、2 日後の v0.6.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つ、アーカイブ、Word 文書、フォント、そして PDF の文字も比べるようになった。</p>
+      <h1>4 日で 9 つのリリース。</h1>
+      <p class="lead">2026 年 9 月 12 日の最初のリリースから、3 日後の v0.7.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つ、アーカイブ、Word 文書、フォント、PDF の文字、ずらした画像、そして JSON と YAML を行ではなくデータとして比べるようになった。</p>
     </div>
   </header>
 
   <div class="wrap">
     <section class="rel-era">
       <div class="rel-era-head">
-        <h2>新しい順</h2><span class="span">v0.6.0 ← v0.1.0 · 2026 年 9 月 14 – 12 日</span>
+        <h2>新しい順</h2><span class="span">v0.7.0 ← v0.1.0 · 2026 年 9 月 15 – 12 日</span>
         <p>CLI は無料で MIT。各リリースは universal binary（Apple silicon + Intel）の zip で、Homebrew の tap はそれを指す。</p>
       </div>
 
+      <div class="rel-row m">
+        <span class="v">0.7.0</span><span class="d">9/15</span>
+        <span class="t"><strong>JSON と YAML を構造で。</strong>両方が JSON として、または意図して絞った YAML の部分集合として読めたら、行ではなくデータとして比べる ── キーの順は変更に数えず、配列の途中への挿入も後ろ全部をノイズにしない。読めないもの（アンカー・タグ・ブロックスカラ・複数ドキュメント・ただの文章）は、誤って読むより行の差分へ戻る。<code>--json</code> に <code>kind: "json"</code> / <code>"yaml"</code> と <code>paths</code> 配列が増えた</span>
+      </div>
       <div class="rel-row">
         <span class="v">0.6.0</span><span class="d">9/14</span>
         <span class="t">画像の <code>--offset=dx,dy</code>：右の絵を左の上に置いて、重なる範囲だけ比べる ── ヘッダーが 1 行動いたスクリーンショット 2 枚が「中身は同じか」に答える。寸法が違っても重なる範囲で比べる。コアはページと字形の描き手も公開し、見せる側が判定と同じ手で描けるようにした</span>
@@ -112,7 +116,7 @@
       <ul>
           <li>日付は GitHub の Release の日付（JST）。版は <code>--version</code> とタグのもの。</li>
           <li>ここにある全リリースに配布物の zip がある。タグだけのものは無い。</li>
-          <li>JSON の形は v0.1.0 から固定。v0.2.0 で <code>pdf</code>、v0.3.0 で <code>dir</code>、v0.4.0 で <code>archive</code>・<code>docx</code>・<code>font</code>、v0.5.0 で <code>pdf</code> の中の <code>text</code> と <code>pdf-text</code>、v0.6.0 で <code>image</code> の中の <code>offset</code> が増えただけで、既存のものは変えていない。</li>
+          <li>JSON の形は v0.1.0 から固定。v0.2.0 で <code>pdf</code>、v0.3.0 で <code>dir</code>、v0.4.0 で <code>archive</code>・<code>docx</code>・<code>font</code>、v0.5.0 で <code>pdf</code> の中の <code>text</code> と <code>pdf-text</code>、v0.6.0 で <code>image</code> の中の <code>offset</code>、v0.7.0 で <code>json</code>・<code>yaml</code> が増えただけで、既存のものは変えていない。</li>
       </ul>
     </aside>
   </div>
