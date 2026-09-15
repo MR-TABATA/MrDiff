@@ -20,9 +20,20 @@ public struct TreeDiff {
     public struct Row: Equatable {
         public let path: String
         public let status: Status
+        public init(path: String, status: Status) {
+            self.path = path
+            self.status = status
+        }
     }
 
     public var rows: [Row]
+
+    /// 突き合わせ以外の道（`compare` を通さず行を直接組む）から作るための入口。
+    /// **判定はここでは行わない** ―― 呼ぶ側が別の比較（例えば `StructuredDiff`）から
+    /// `onlyLeft` / `onlyRight` / `changed` の形へ写すときに使う。`compare` 自身もこれを通る。
+    public init(rows: [Row]) {
+        self.rows = rows
+    }
 
     public var changed: [Row]   { rows.filter { $0.status == .changed } }
     public var onlyLeft: [Row]  { rows.filter { $0.status == .onlyLeft } }
