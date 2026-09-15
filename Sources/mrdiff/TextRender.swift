@@ -92,6 +92,23 @@ struct Out {
     }
 }
 
+/// JSON / YAML の構造差分を並べる。**行番号の代わりにパス**（`user.name` / `items[2]`）。
+/// 行 diff の `-` / `+` と同じ記号を使い、変わった場所（削除・追加のどちらでもない）だけ
+/// `~` を足す ―― 3 つ目の状態なので、既存の赤 / 緑とは別の色（未使用だった cyan）を当てる。
+func renderStructured(_ d: StructuredDiff, style s: Style, into out: inout Out) {
+    for c in d.changes {
+        let label = c.path.isEmpty ? t("structured.root") : c.path
+        switch c.kind {
+        case .removed:
+            out.line("\(s.red) - \(label)\(s.reset)")
+        case .added:
+            out.line("\(s.green) + \(label)\(s.reset)")
+        case .changed:
+            out.line("\(s.cyan) ~ \(label)\(s.reset)")
+        }
+    }
+}
+
 /// 前後に見せる行数。unified diff と同じ 3。
 let contextLines = 3
 

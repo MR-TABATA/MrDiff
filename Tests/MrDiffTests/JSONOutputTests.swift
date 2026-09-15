@@ -22,7 +22,8 @@ final class JSONOutputTests: XCTestCase {
         let dir = JSONOutput.dir(TreeDiff(rows: []))
         let archive = JSONOutput.archive(TreeDiff(rows: []))
         let docx = JSONOutput.docx(compareText("a\n", "a\n"), otherPartsChanged: 0)
-        for (o, kind) in [(text, "text"), (image, "image"), (binary, "binary"), (site, "site"), (tree, "tree"), (dir, "dir"), (archive, "archive"), (docx, "docx")] {
+        let structured = JSONOutput.structured(StructuredDiff(changes: []), format: "json")
+        for (o, kind) in [(text, "text"), (image, "image"), (binary, "binary"), (site, "site"), (tree, "tree"), (dir, "dir"), (archive, "archive"), (docx, "docx"), (structured, "json")] {
             XCTAssertEqual(o["kind"] as? String, kind)
             XCTAssertEqual(o["result"] as? String, "identical", kind)
         }
@@ -41,6 +42,21 @@ final class JSONOutputTests: XCTestCase {
         let s = JSONOutput.encode(JSONOutput.text(d))
         // changed は replace ハンクの max(左, 右)。1 行消して 2 行足すと changed:2
         XCTAssertEqual(s, #"{"added":0,"changed":2,"kind":"text","removed":0,"result":"differ"}"#)
+    }
+
+    // MARK: - JSON / YAML の構造比較
+
+    func testStructuredDiffer() {
+        let a = JSONStructured.parse(Data(#"{"a":1}"#.utf8))!
+        let b = JSONStructured.parse(Data(#"{"a":2,"b":3}"#.utf8))!
+        let d = compareStructured(a, b)
+        let s = JSONOutput.encode(JSONOutput.structured(d, format: "json"))
+        XCTAssertEqual(s, #"{"added":1,"changed":1,"kind":"json","paths":[{"path":"b","status":"added"},{"path":"a","status":"changed"}],"removed":0,"result":"differ"}"#)
+    }
+
+    func testStructuredIdenticalOmitsCounts() {
+        let s = JSONOutput.encode(JSONOutput.structured(StructuredDiff(changes: []), format: "yaml"))
+        XCTAssertEqual(s, #"{"kind":"yaml","result":"identical"}"#)
     }
 
     // MARK: - 画像

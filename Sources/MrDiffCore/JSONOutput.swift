@@ -43,6 +43,25 @@ public enum JSONOutput {
         return o
     }
 
+    /// JSON / YAML の構造比較。`kind` は実際に読めた形式（`"json"` か `"yaml"`）。
+    /// `paths` は `dir` / `tree` の `rows` と同じ形（`{path, status}`）―― 一覧という点で同じもの。
+    public static func structured(_ d: StructuredDiff, format: String, redirects: [Redirect] = []) -> [String: Any] {
+        var o: [String: Any] = ["kind": format]
+        if d.isIdentical {
+            o["result"] = "identical"
+        } else {
+            o["result"] = "differ"
+            o["changed"] = d.changed
+            o["added"] = d.added
+            o["removed"] = d.removed
+            o["paths"] = d.changes.map { c -> [String: Any] in
+                ["path": c.path, "status": c.kind.rawValue]
+            }
+        }
+        addRedirects(&o, redirects)
+        return o
+    }
+
     public static func image(_ r: ImageComparison, tolerance: Int, ignoreAlpha: Bool,
                              offset: Point? = nil, tone: ToneDifference? = nil, redirects: [Redirect] = []) -> [String: Any] {
         var o: [String: Any] = ["kind": "image"]

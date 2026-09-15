@@ -2,6 +2,9 @@
 
 "text.identical"       = "違いはありません";
 "text.summary"         = "変更 %d 行・追加 %d 行・削除 %d 行";
+"structured.identical" = "違いはありません";
+"structured.summary"   = "変更 %d 箇所・追加 %d 箇所・削除 %d 箇所";
+"structured.root"      = "（ルート）";
 "images.identical"     = "違いはありません";
 "images.differ"        = "%d / %d 画素が違います（%@%%）";
 "images.differ.tiny"   = "%d / %d 画素が違います";

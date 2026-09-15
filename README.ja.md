@@ -49,6 +49,7 @@ MrDiff はそれに取って代わろうとしない。MrDiff が足すのは、
 | | |
 | :--- | :--- |
 | **テキストとソース** | 行の差分。色つき、文字単位のハイライト |
+| **JSON と YAML** | 構造の差分 ── どのキー・値・配列要素か。キーの順は無視 |
 | **画像** | 違うか、画素の何割が、最初はどこか |
 | **PDF** | どのページが違い、そのページのどこか ── 画素ではなく mm で |
 | **バイナリ** | 違うか、違う箇所はいくつか、最初のオフセットはどこか |
@@ -88,6 +89,8 @@ OS のロケールも見ない ── Issue に貼った出力が、答える側
 
 ```bash
 mrdiff a.txt b.txt                    # テキスト
+mrdiff a.json b.json                  # JSON ── 構造で比べる。キーの順は数えない
+mrdiff a.yaml b.yaml                  # YAML ── 同じく。読める部分集合の範囲で
 mrdiff a.png b.png                    # 画像 ── 要約。絵は出さない
 mrdiff a.pdf b.pdf                    # PDF ── どのページの、どこか（mm）
 mrdiff --text a.pdf b.pdf             # PDF ── どの行の文言が変わったか
@@ -135,11 +138,35 @@ $ mrdiff a.log b.log
 どちらか言えない。
 
 どの比較を走らせるかは**拡張子ではなく中身**で決める。UTF-8 として読めて NUL バイトが
-無い 2 つは、行の差分になる。
+無い 2 つは、行の差分になる ── ただし両方が JSON として、または下で挙げる YAML の
+部分集合として読めたときは、代わりに構造の比較になる（次の節）。Markdown と、
+片方しか読めない JSON/YAML は、引き続き行の差分。「`**太字**` を外せば同じ」は、
+この版が言うことの外側。
 
-Markdown と JSON もこの方法 ── 行ごとに、テキストとして ── で比べる。整形し直しは
-変更と数える。「`**太字**` を外せば同じ」や「キーの順が違うだけで同じ」は、この版が
-言うことの外側。
+### JSON と YAML
+
+両方が JSON として、または両方が YAML として読めたら、行ではなくデータとして比べる。
+キーの順は変更に数えない。値が別の行へ動いただけも数えない。
+
+```
+$ mrdiff config.json config-new.json
+1 changed, 2 added, 0 removed
+ + extra
+ + items[3]
+ ~ version
+```
+
+`~` は値の変更、`+` / `-` はキーや配列要素の追加・削除。パスはオブジェクトのキーを
+`.`、配列の位置を `[i]` で表す ── `services.web.ports[1]`。配列の並び替えは、実際に
+違う位置だけを変更として言う（同じ要素の並び替えだけなら変わらない ── 行の差分が
+行に対してやっていることを、配列の要素に対してもやっている。途中への挿入で後ろ全部が
+ノイズにはならない）。
+
+YAML は**意図して絞った部分集合**を読む：ブロックとフロー、両方のマッピング／
+シーケンス、素の・クォート付きのスカラ、コメント。アンカー／エイリアス（`&` `*`）、
+タグ（`!!str`）、ブロックスカラ（`|` `>`）、1 ファイル中の複数ドキュメントには
+手を出さない ── 使っているファイルは、誤って読むより行の差分へ黙って戻る。
+`--json` はどちらの種類でも同じ情報を `paths` 配列に持つ（下の JSON の節）。
 
 ### 画像
 
@@ -347,9 +374,10 @@ only in B   chapter-07.md
 
 | キー | |
 | :--- | :--- |
-| `kind` | 何として比べたか：`text`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ）、`archive`（zip 2 つ）、`docx`、`font` |
+| `kind` | 何として比べたか：`text`、`json`、`yaml`、`image`、`pdf`、`binary`、`site`（`--site`）、`tree`（`--ssh`）、`dir`（フォルダ 2 つ）、`archive`（zip 2 つ）、`docx`、`font` |
 | `result` | `identical` か `differ`。画像は `size_mismatch` も。`--site` は、違いは無いが確認できなかったファイルがあれば `error` |
 | text | `changed`、`added`、`removed`。`changed` は置き換えられた塊を両側の大きいほうで数える ── 1 行消して 2 行足せば `changed: 2` |
+| json / yaml | `changed`、`added`、`removed`（text と同じ数え方を、行ではなく値・キー・配列要素ごとに当てる）、`paths: [{path, status}]`（`status` は `changed` / `added` / `removed`、`path` は `user.name` や `items[2]` の形）。形式が食い違う 2 本（片方 JSON、片方 YAML）でも両方読めれば比べる ── `kind` は 1 本目が読めた形式の名前 |
 | image | `changed`、`total`、`fraction`、`first: {x, y}`、`max_gap`（チャンネルごとの差の最大 ── `--tolerance=<max_gap>` なら同じになる）。`size_mismatch` なら `a` と `b` が `{width, height}`。`tolerance` と `ignore_alpha` は使ったときだけ付く ── キーが無ければバイト単位の厳密比較。`--offset` を付けたときは `offset: {x, y}` が付き、`total` は重なった範囲の画素数になる。`tone_shift` は B − A のチャンネルごとの平均（符号付き）── 明るく書き出されたせいで「44% 違う」写真は、ここに `[21.3, 18.6, 17.7]` のように出る |
 | pdf | `pages_a`、`pages_b`、`dpi`、`text`（`{result, changed, added, removed, lines_a, lines_b}`。片方に文字が無ければ null）、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |

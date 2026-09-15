@@ -2,6 +2,9 @@
 
 "text.identical"       = "No differences";
 "text.summary"         = "%d changed, %d added, %d removed";
+"structured.identical" = "No differences";
+"structured.summary"   = "%d changed, %d added, %d removed";
+"structured.root"      = "(root)";
 "images.identical"     = "Images are identical";
 "images.differ"        = "Images differ — %d of %d pixels (%@%%)";
 "images.differ.tiny"   = "Images differ — %d of %d pixels";

@@ -300,6 +300,30 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
     // 行には意味が無い。黙って無視すると「指定したのに効いていない」に気づけない。
     if tolerance > 0 || ignoreAlpha { die(t("error.image_only_flag")) }
 
+    // **JSON／YAML として両方読めたら、構造で比べる。**「同じでもキーの並びが違う」
+    // を差分に出さないための線（README が挙げていた穴）。どちらかが読めなければ
+    // （崩れた YAML、対応していない構文、1 単語だけの英文）黙って行 diff に戻る ――
+    // 「浅くてもいいが、間違ってはいけない」を、パーサが投げたときにも守る。
+    // 両側の形式（json/yaml）が食い違っても比較はできる ―― `kind` は A 側の形式で言う。
+    if let (va, formatA) = parseStructured(dataA), let (vb, _) = parseStructured(dataB) {
+        let d = compareStructured(va, vb)
+        if wantsJSON {
+            print(JSONOutput.encode(JSONOutput.structured(d, format: formatA, redirects: redirectsJSON)))
+        } else if d.isIdentical {
+            print(t("structured.identical"))
+            printRedirects()
+        } else {
+            let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
+            var out = Out(to: sink ?? stdout)
+            out.line(t("structured.summary", d.changed, d.added, d.removed))
+            for line in redirects { out.line("  " + line) }
+            renderStructured(d, style: Style(on: useColor), into: &out)
+            out.flush()
+            Pager.finish()
+        }
+        exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+    }
+
     let d = compareText(TextSource(data: dataA), TextSource(data: dataB))
     if wantsJSON {
         print(JSONOutput.encode(JSONOutput.text(d, redirects: redirectsJSON)))

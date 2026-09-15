@@ -50,6 +50,7 @@ a different output for each.
 | | |
 | :--- | :--- |
 | **Text and source** | line diff, colored, with character-level highlight |
+| **JSON and YAML** | structural diff — which keys/values/array elements, ignoring key order |
 | **Images** | do they differ, what fraction of pixels, where is the first one |
 | **PDFs** | which pages differ, and where on the page — in millimetres, not pixels |
 | **Binaries** | do they differ, how many regions, offset of the first |
@@ -90,6 +91,8 @@ issue stays readable to whoever answers it.
 
 ```bash
 mrdiff a.txt b.txt                    # text
+mrdiff a.json b.json                  # JSON — structural, key order does not count
+mrdiff a.yaml b.yaml                  # YAML — same, for the block/flow subset it reads
 mrdiff a.png b.png                    # image — summary, not a picture
 mrdiff a.pdf b.pdf                    # PDF — which pages, where on the page (mm)
 mrdiff --text a.pdf b.pdf             # PDF — which lines of text changed
@@ -138,11 +141,39 @@ Line numbers are two columns, left and right. A deleted line 7 and an added line
 7 are not the same line, and one column cannot say which is which.
 
 Which kind of comparison runs is decided by **content, not extension**: two files
-that decode as UTF-8 and hold no NUL byte get the line diff.
+that decode as UTF-8 and hold no NUL byte get the line diff — unless both sides
+parse as JSON or as the YAML subset below, in which case they get the structural
+diff instead (next section). Markdown, and any JSON/YAML that only one side
+parses, still get the line diff. "The same after `**bold**` is removed" is
+outside what this version says.
 
-Markdown and JSON are compared this way too — line by line, as text. Reformatting
-counts as a change; "the same after `**bold**` is removed" or "the same with the
-keys in a different order" is outside what this version says.
+### JSON and YAML
+
+Two files that both parse as JSON, or both parse as YAML, are compared as data,
+not lines: key order does not count as a change, and a value moved to a
+different line does not either.
+
+```
+$ mrdiff config.json config-new.json
+1 changed, 2 added, 0 removed
+ + extra
+ + items[3]
+ ~ version
+```
+
+`~` is a changed value, `+` / `-` are added/removed keys or array elements. The
+path uses `.` for object keys and `[i]` for array positions — `services.web.ports[1]`.
+Reordering an array still counts as a change at the position that actually
+differs; only a full-array reorder with the exact same elements is spared
+(the diff runs on the array the same way the line diff runs on lines, so an
+insertion in the middle does not turn everything after it into noise).
+
+YAML support is a deliberate subset: block and flow mappings/sequences, plain
+and quoted scalars, comments. Anchors/aliases (`&` `*`), tags (`!!str`), block
+scalars (`|` `>`), and multiple documents in one file are not attempted — a
+file that uses them falls back to the line diff rather than being read wrong.
+`--json` on either kind carries a `paths` array with the same information
+(see JSON below).
 
 ### Images
 
@@ -367,9 +398,10 @@ and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `
 
 | key | |
 | :--- | :--- |
-| `kind` | what it was compared as: `text`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`), `dir` (two folders), `archive` (two zips), `docx`, `font` |
+| `kind` | what it was compared as: `text`, `json`, `yaml`, `image`, `pdf`, `binary`, `site` (`--site`), `tree` (`--ssh`), `dir` (two folders), `archive` (two zips), `docx`, `font` |
 | `result` | `identical` or `differ`; images can also say `size_mismatch`; `--site` says `error` when nothing differed but some files could not be checked |
 | text | `changed`, `added`, `removed`. `changed` counts a replaced block as the larger of its two sides — one line deleted and two inserted in its place is `changed: 2` |
+| json / yaml | `changed`, `added`, `removed` (same counting rule as text, applied per changed value/key/array element instead of per line), and `paths: [{path, status}]` where `status` is `changed` / `added` / `removed` and `path` is `user.name` / `items[2]` style. Two files of different formats that both parse (one JSON, one YAML) are still compared; `kind` names whichever format the first file parsed as |
 | image | `changed`, `total`, `fraction`, `first: {x, y}`, `max_gap` (the largest per-channel difference — `--tolerance=<max_gap>` would call the two the same); on `size_mismatch`, `a` and `b` as `{width, height}`. `tolerance` and `ignore_alpha` appear only when they were used — no key means byte-strict. `offset: {x, y}` appears when `--offset` was given, and then `total` counts the overlap only. `tone_shift` is the mean signed difference B − A per channel — a photo that is "44% different" because it was exported brighter shows up here as `[21.3, 18.6, 17.7]` |
 | pdf | `pages_a`, `pages_b`, `dpi`, `text` (`{result, changed, added, removed, lines_a, lines_b}`, or null when a side has no text), and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
