@@ -44,6 +44,35 @@ final class TextDiffTests: XCTestCase {
         XCTAssertNotEqual(h.a, h.b)
     }
 
+    // MARK: - 空白無視
+
+    /// スペース・タブの量が違うだけの行は、`ignoreWhitespace` を付けると同じ行になる。
+    func test_空白無視なら空白だけ違う行は同じ扱い() {
+        let a = TextSource(text: "status=200\n", ignoreWhitespace: true)
+        let b = TextSource(text: "status = 200\n", ignoreWhitespace: true)
+        XCTAssertEqual(a.hashes, b.hashes)
+    }
+
+    /// 空白を無視しない既定では、これまでどおり違う行として扱う。
+    func test_空白無視を付けなければ違う行のまま() {
+        let a = TextSource(text: "status=200\n", ignoreWhitespace: false)
+        let b = TextSource(text: "status = 200\n", ignoreWhitespace: false)
+        XCTAssertNotEqual(a.hashes, b.hashes)
+    }
+
+    /// 空白以外の文字が違えば、空白を無視しても別の行のまま。
+    func test_空白無視でも中身が違えば別の行() {
+        let a = TextSource(text: "status=200\n", ignoreWhitespace: true)
+        let b = TextSource(text: "status=500\n", ignoreWhitespace: true)
+        XCTAssertNotEqual(a.hashes, b.hashes)
+    }
+
+    /// 空白無視でも、表示する行そのもの（`line(_:)`）は元のバイトのまま変わらない。
+    func test_空白無視でも表示は元のまま() {
+        let a = TextSource(text: "a  b\n", ignoreWhitespace: true)
+        XCTAssertEqual(a.line(0), "a  b")
+    }
+
     // MARK: - 種類の判定
 
     func test_テキストと判定する() {

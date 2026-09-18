@@ -56,7 +56,10 @@ public struct TextSource {
     }
 
     /// バイト列から組み立てる。**1 回の走査で、行の切り出しとハッシュを同時にやる。**
-    public init(data: Data) {
+    ///
+    /// `ignoreWhitespace` はハッシュ（＝行の同一判定）だけに効く。**表示（`line(_:)`）は
+    /// 常に元のバイトのまま** ── 空白を無視した比較でも、画面には削らず出す。
+    public init(data: Data, ignoreWhitespace: Bool = false) {
         var ranges: [Range<Int>] = []
         var hs: [LineHash] = []
         // 1 行 40 バイト前後を見込んで先に確保する（伸長のたびの再確保を減らす）
@@ -74,7 +77,8 @@ public struct TextSource {
                     var end = i
                     if end > start && base[end - 1] == 0x0D { end -= 1 }   // \r\n
                     ranges.append(start..<end)
-                    hs.append(hashBytes(base + start, end - start))
+                    hs.append(ignoreWhitespace ? hashBytesIgnoringWhitespace(base + start, end - start)
+                                               : hashBytes(base + start, end - start))
                     start = i + 1
                 }
                 i += 1
@@ -84,7 +88,8 @@ public struct TextSource {
                 var end = n
                 if end > start && base[end - 1] == 0x0D { end -= 1 }
                 ranges.append(start..<end)
-                hs.append(hashBytes(base + start, end - start))
+                hs.append(ignoreWhitespace ? hashBytesIgnoringWhitespace(base + start, end - start)
+                                           : hashBytes(base + start, end - start))
             }
         }
 
@@ -94,16 +99,16 @@ public struct TextSource {
     }
 
     /// 文字列から。テスト・小さな入力用。
-    public init(text: String) {
-        self.init(data: Data(text.utf8))
+    public init(text: String, ignoreWhitespace: Bool = false) {
+        self.init(data: Data(text.utf8), ignoreWhitespace: ignoreWhitespace)
     }
 
     /// ファイルから。**`mappedIfSafe` で開く** ―― 中身を常駐メモリへ写さない。
-    public static func load(_ url: URL) throws -> TextSource {
+    public static func load(_ url: URL, ignoreWhitespace: Bool = false) throws -> TextSource {
         guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else {
             throw ImageLoadError.cannotOpen(url)
         }
-        return TextSource(data: data)
+        return TextSource(data: data, ignoreWhitespace: ignoreWhitespace)
     }
 }
 
@@ -146,6 +151,34 @@ func hashBytes(_ p: UnsafePointer<UInt8>, _ count: Int) -> LineHash {
     // 0 が続く行が同じ値になりうる。
     a ^= UInt64(count) &* 0x9e37_79b9_7f4a_7c15
     b = b &+ UInt64(count)
+    return LineHash(a: a, b: b)
+}
+
+/// 行のハッシュ。空白（半角スペース・タブ）を飛ばして混ぜる ── 「空白無視」の比較用。
+///
+/// `hashBytes` の 8 バイトまとめ読みは使えない（飛ばした分だけ長さが動くので、
+/// 一括で読んだチャンクをそのまま混ぜられない）。空白無視は手動で切り替える設定なので、
+/// 既定の速さより「1 バイトずつでも正しく飛ばせる」ほうを取る。
+@inline(__always)
+func hashBytesIgnoringWhitespace(_ p: UnsafePointer<UInt8>, _ count: Int) -> LineHash {
+    var a: UInt64 = 0xcbf2_9ce4_8422_2325
+    var b: UInt64 = 0x9e37_79b9_7f4a_7c15
+    var n: UInt64 = 0
+    var k = 0
+    while k < count {
+        let c = p[k]
+        k += 1
+        if c == 0x20 || c == 0x09 { continue }             // スペース・タブは無視
+        let v = UInt64(c)
+        a = (a ^ v) &* 0x0000_0100_0000_01b3
+        a ^= a >> 31
+        b = (b &+ v) &* 0x9e37_79b9_7f4a_7c15
+        b ^= b >> 29
+        n += 1
+    }
+    // 長さは「無視した後」の文字数を混ぜる ── 空白の量そのものは同一判定に関わらせない。
+    a ^= n &* 0x9e37_79b9_7f4a_7c15
+    b = b &+ n
     return LineHash(a: a, b: b)
 }
 
