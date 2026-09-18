@@ -155,6 +155,67 @@ public func prettyPrint(_ v: StructuredValue, indent: Int = 0) -> String {
     }
 }
 
+// MARK: - 整形しつつ、行ごとの JSON パスも返す（GUI 用）
+
+/// `prettyPrint` と同じ文字列を作りながら、各行がどのパス（`StructuredChange.path` と
+/// 同じ書式）の値かも返す。GUI（MrkDiff）が「この行はどのキー／要素の差分か」を引くために使う。
+/// CLI は使わない ── CLI は `StructuredDiff` をパスのまま出すので、行に写す必要が無い。
+public struct PrettyPrinted {
+    public let text: String
+    /// 行ごとのパス。`text` を `\n` で割った行と 1 対 1。閉じ括弧や区切りの行は、
+    /// その行を含む一番内側の要素（コンテナ自身）のパスになる。
+    public let linePaths: [String]
+}
+
+public func prettyPrintWithPaths(_ v: StructuredValue) -> PrettyPrinted {
+    let (lines, paths) = prettyLines(v, path: "", indent: 0)
+    return PrettyPrinted(text: lines.joined(separator: "\n"), linePaths: paths)
+}
+
+/// `prettyPrint` の再帰と**同じ組み方**（インデント・カンマの付け方）で、行の配列を作る。
+/// 1 行の文字列 = `prettyPrint` の出力を `\n` で割った 1 行。ここが `prettyPrint` とずれると
+/// パスの対応が壊れるので、テスト（`PrettyPrintPathsTests`）で本体と文字列が一致することを縛る。
+private func prettyLines(_ v: StructuredValue, path: String, indent: Int) -> (lines: [String], paths: [String]) {
+    let pad = String(repeating: "  ", count: indent)
+    switch v {
+    case .null, .bool, .number, .string:
+        return ([prettyPrint(v, indent: indent)], [path])
+    case .array(let items):
+        guard !items.isEmpty else { return (["[]"], [path]) }
+        let childIndent = indent + 1
+        let childPad = String(repeating: "  ", count: childIndent)
+        var lines: [String] = ["["]
+        var paths: [String] = [path]
+        for (i, item) in items.enumerated() {
+            var (cl, cp) = prettyLines(item, path: appendIndex(path, i), indent: childIndent)
+            cl[0] = childPad + cl[0]
+            if i < items.count - 1 { cl[cl.count - 1] += "," }
+            lines.append(contentsOf: cl)
+            paths.append(contentsOf: cp)
+        }
+        lines.append(pad + "]")
+        paths.append(path)
+        return (lines, paths)
+    case .object(let entries):
+        guard !entries.isEmpty else { return (["{}"], [path]) }
+        let childIndent = indent + 1
+        let childPad = String(repeating: "  ", count: childIndent)
+        let keys = entries.keys.sorted()
+        var lines: [String] = ["{"]
+        var paths: [String] = [path]
+        for (i, key) in keys.enumerated() {
+            var (cl, cp) = prettyLines(entries[key]!, path: appendKey(path, key), indent: childIndent)
+            cl[0] = childPad + quoteJSON(key) + ": " + cl[0]
+            if i < keys.count - 1 { cl[cl.count - 1] += "," }
+            lines.append(contentsOf: cl)
+            paths.append(contentsOf: cp)
+        }
+        lines.append(pad + "}")
+        paths.append(path)
+        return (lines, paths)
+    }
+}
+
 private func quoteJSON(_ s: String) -> String {
     var out = "\""
     for scalar in s.unicodeScalars {

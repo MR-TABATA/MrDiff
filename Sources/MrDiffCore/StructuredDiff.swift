@@ -94,11 +94,13 @@ private func diffArrays(_ a: [StructuredValue], _ b: [StructuredValue], path: St
     }
 }
 
-private func appendKey(_ path: String, _ key: String) -> String {
+/// module 内どこからでも呼べるようにしてある ── `StructuredValue.prettyPrintWithPaths` が
+/// 同じ組み方でパスを作る（`StructuredChange.path` と文字列で突き合わせられるようにするため）。
+func appendKey(_ path: String, _ key: String) -> String {
     path.isEmpty ? key : "\(path).\(key)"
 }
 
-private func appendIndex(_ path: String, _ index: Int) -> String {
+func appendIndex(_ path: String, _ index: Int) -> String {
     "\(path)[\(index)]"
 }
 

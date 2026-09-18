@@ -181,4 +181,53 @@ final class StructuredDiffTests: XCTestCase {
         let s = prettyPrint(json(#"{"a":1,"list":[1,2]}"#))
         XCTAssertEqual(s, "{\n  \"a\": 1,\n  \"list\": [\n    1,\n    2\n  ]\n}")
     }
+
+    // MARK: - prettyPrintWithPaths（GUI が「この行は何のパスか」を引くためのもの）
+
+    /// **一致を縛る。**ここが `prettyPrint` とずれると、行からパスへ引いた結果が信用できない。
+    func testPrettyPrintWithPathsMatchesPrettyPrintText() {
+        for s in [#"{"a":1,"list":[1,2],"user":{"name":"x"}}"#, "[1,2,3]", "{}", "[]",
+                  #"{"items":[{"id":1},{"id":2}]}"#] {
+            let v = json(s)
+            XCTAssertEqual(prettyPrintWithPaths(v).text, prettyPrint(v), s)
+        }
+    }
+
+    func testPrettyPrintWithPathsCountsMatchLines() {
+        let v = json(#"{"a":1,"list":[1,2]}"#)
+        let p = prettyPrintWithPaths(v)
+        XCTAssertEqual(p.linePaths.count, p.text.components(separatedBy: "\n").count)
+    }
+
+    /// 各行のパスが、`StructuredChange.path` と同じ書式で引ける。
+    func testPrettyPrintWithPathsLocatesNestedKey() {
+        let v = json(#"{"a":1,"user":{"name":"x","age":2}}"#)
+        let p = prettyPrintWithPaths(v)
+        let lines = p.text.components(separatedBy: "\n")
+        // {
+        //   "a": 1,
+        //   "user": {
+        //     "age": 2,
+        //     "name": "x"
+        //   }
+        // }
+        XCTAssertEqual(lines[1], "  \"a\": 1,")
+        XCTAssertEqual(p.linePaths[1], "a")
+        XCTAssertEqual(lines[2], "  \"user\": {")
+        XCTAssertEqual(p.linePaths[2], "user")
+        XCTAssertEqual(lines[3], "    \"age\": 2,")
+        XCTAssertEqual(p.linePaths[3], "user.age")
+        XCTAssertEqual(lines[4], "    \"name\": \"x\"")
+        XCTAssertEqual(p.linePaths[4], "user.name")
+    }
+
+    func testPrettyPrintWithPathsLocatesArrayElement() {
+        let v = json(#"{"items":[10,20]}"#)
+        let p = prettyPrintWithPaths(v)
+        let lines = p.text.components(separatedBy: "\n")
+        XCTAssertEqual(lines[2], "    10,")
+        XCTAssertEqual(p.linePaths[2], "items[0]")
+        XCTAssertEqual(lines[3], "    20")
+        XCTAssertEqual(p.linePaths[3], "items[1]")
+    }
 }
