@@ -63,6 +63,10 @@ a different output for each.
 | **Word documents** | which paragraphs changed, as a line diff of the text |
 | **Fonts** (OTF, TTF, TTC) | which glyphs render differently, and which characters were added or removed |
 
+## Prefer a Mac app?
+
+[MrkDiff Hex](https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html) shows binary and text differences side by side. The same app includes every feature during a 14-day free trial; no credit card is required.
+
 ## Install
 
 ```bash

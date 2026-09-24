@@ -62,6 +62,10 @@ MrDiff はそれに取って代わろうとしない。MrDiff が足すのは、
 | **Word 文書** | どの段落が変わったか。本文の行 diff |
 | **フォント**（OTF、TTF、TTC） | どの字形が違うか、どの文字が増減したか |
 
+## Macアプリで見たいとき
+
+[MrkDiff Hex](https://mr-tabata.github.io/MrDiff/MrkDiffHex.ja.html) は、バイナリとテキストの違いを左右に並べて表示します。同じアプリの全機能を14日間無料で試せます。カード登録は不要です。
+
 ## インストール
 
 ```bash
