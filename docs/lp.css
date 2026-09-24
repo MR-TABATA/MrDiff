@@ -232,6 +232,13 @@ footer a { color: var(--text-dim); }
 .honest .card h3 { font-size: 16px; }
 .honest .card p { font-size: 13.5px; }
 
+/* MrkDiff Hex — the paid GUI, set apart from the free CLI's dark cards. */
+.hex { background: var(--bg-deep); }
+.hex-demo { max-width: 760px; margin: 36px auto 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.hex-demo img { display: block; width: 100%; height: auto; }
+.hex .card { background: transparent; border-color: #2a2a2a; }
+.hex .card:hover { transform: none; border-color: #3a3a3a; }
+
 /* Card-level example lines. */
 .card pre.ex {
   margin: 14px 0 0; padding: 12px 14px; font-size: 12.5px; line-height: 1.7;
