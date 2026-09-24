@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>MrkDiff Hex — バイナリとテキストの差分を、Macで。</title>
+  <meta name="description" content="MrkDiff HexはMac用のバイナリ・テキスト比較アプリ。変わったバイトや文字を見つけ、差分を順に確認。$39の買い切り。">
+  <meta property="og:title" content="MrkDiff Hex — バイナリとテキストの差分を、Macで。">
+  <meta property="og:description" content="MrkDiff HexはMac用のバイナリ・テキスト比較アプリ。変わったバイトや文字を見つけ、差分を順に確認。$39の買い切り。">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/MrkDiffHex.ja.html">
+  <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/mrkdiff-hex-still.png">
+  <meta property="og:image:width" content="900">
+  <meta property="og:image:height" content="526">
+  <meta property="og:image:alt" content="MrkDiff Hexのバイナリ比較画面。左右の16進表示と、右側の差分一覧。">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.ja.html">
+  <link rel="alternate" hreflang="ja" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.ja.html">
+  <link rel="alternate" hreflang="en" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html">
+  <link rel="alternate" hreflang="x-default" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html">
+  <link rel="icon" type="image/svg+xml" href="media/mrkdiff-hex-icon-small.svg">
+  <link rel="stylesheet" href="mrkdiff-hex.css">
+  <script src="mrkdiff-hex.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ</a>
+  <header class="site-header wrap">
+    <a class="brand" href="MrkDiffHex.ja.html" aria-label="MrkDiff Hex"><img src="media/mrkdiff-hex-icon-small.svg" width="40" height="40" alt="">MrkDiff <span>Hex</span></a>
+    <nav aria-label="メインナビゲーション">
+      <a href="#features">比較できること</a><a href="#workflow">使い方</a><a href="#pricing">価格</a>
+      <a class="lang-switch" href="MrkDiffHex.en.html" lang="en" hreflang="en">English</a>
+    </nav>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-heading"><div><p class="eyebrow">BINARY + TEXT DIFF FOR MAC</p><h1 id="hero-title">バイトの違いも。<br>文字の違いも。<br><em>見て、確かめる。</em></h1></div><img class="hero-icon" src="media/mrkdiff-hex-icon.svg" alt="" width="208" height="208"></div>
+      <p class="lead">バイナリとテキストを、ひとつのMacアプリで比較。<br class="desktop-break">変わった箇所を見つけて、次の差分へ。</p>
+      <div class="actions"><span class="button secondary" aria-disabled="true">ただいま準備中</span></div>
+      <ul class="facts"><li>macOS 13以降</li><li>買い切り・サブスクなし</li><li>Mac 2台</li></ul>
+      <figure class="app-demo">
+        <div class="demo-topline"><span><span class="live-dot"></span> MrkDiff Hex</span><span class="mono">fw_a.bin ↔ fw_b.bin</span></div>
+        <img id="demo-image" src="media/mrkdiff-hex-still.png" data-animation="media/mrkdiff-hex-demo.gif" data-still="media/mrkdiff-hex-still.png" width="900" height="526" alt="MrkDiff Hexのバイナリ比較画面。左右の16進表示と、右側の差分一覧。" fetchpriority="high">
+        <figcaption><span>実際の画面：2つのバイナリファイルを比較し、差分を順に確認。</span><button id="demo-toggle" type="button" aria-controls="demo-image" aria-pressed="false" data-play="デモを再生" data-pause="デモを停止" hidden>デモを再生</button></figcaption>
+      </figure>
+    </section>
+    <section id="features" class="features wrap" aria-labelledby="features-title">
+      <div class="section-heading"><p class="eyebrow">TWO WAYS TO LOOK CLOSER</p><h2 id="features-title">「違う」の、その先へ。</h2><p>どのバイトが変わったのか。どの文字を書き換えたのか。<br>左右を見比べながら、確かめたい違いにたどり着けます。</p></div>
+      <article class="feature-row">
+        <div class="feature-copy"><p class="eyebrow">01 / BINARY</p><h3>変わったバイトを、<br>見逃さない。</h3><p>2つのファイルを16進数と文字表示で並べ、違うバイトをハイライト。オフセットと差分一覧を手がかりに、変更箇所を確認できます。</p><ul class="check-list"><li>差分一覧から、その箇所へジャンプ</li><li>1行の表示を8・16・32バイトから選択</li><li>ファームウェアやバイナリデータの変更確認に</li></ul></div>
+        <figure class="code-figure"><div class="code-header"><span>BINARY DIFF</span><span>OFFSET 000000A0</span></div><div class="byte-example" aria-label="変更前と変更後のバイトの例"><div class="file-label">A / firmware-before.bin</div><code>4B 52 59 60 <mark>67 6E</mark> 75 7C<br>83 8A 91 98 9F A6 AD B4</code><div class="compare-divider">↓</div><div class="file-label">B / firmware-after.bin</div><code>4B 52 59 60 <mark>FF FF</mark> 75 7C<br>83 8A 91 98 9F A6 AD B4</code></div><figcaption>表示イメージ：変わったバイトだけを強調</figcaption></figure>
+      </article>
+      <article class="feature-row text-feature">
+        <div class="feature-copy"><p class="eyebrow">02 / TEXT</p><h3>変わった行から、<br>変わった文字まで。</h3><p>テキストは左右2画面で比較。追加・削除だけでなく、行の中で変わった範囲も強調するので、小さな修正まで追えます。</p><ul class="check-list"><li>ソースコード・設定ファイル・文章を比較</li><li>選んだテキスト差分を左右どちらかへ適用</li><li>使い慣れたエディタでファイルを開く</li></ul></div>
+        <figure class="code-figure"><div class="code-header"><span>TEXT DIFF</span><span>config.ini</span></div><div class="text-example"><div class="file-label">A / before</div><pre><span class="line-number">1</span> [server]
+<span class="line-number">2</span> port = <mark>8080</mark>
+<span class="line-number">3</span> host = localhost</pre><div class="compare-divider">↓</div><div class="file-label">B / after</div><pre><span class="line-number">1</span> [server]
+<span class="line-number">2</span> port = <mark>9090</mark>
+<span class="line-number">3</span> host = localhost</pre></div><figcaption>表示イメージ：行内の変更箇所を強調</figcaption></figure>
+      </article>
+    </section>
+    <section id="workflow" class="workflow" aria-labelledby="workflow-title"><div class="wrap"><p class="eyebrow">A SIMPLE WORKFLOW</p><h2 id="workflow-title">開く。見つける。確かめる。</h2><ol class="steps"><li><span class="step-number">01</span><h3>ファイルを2つ開く</h3><p>比較したいファイルを左右に指定。ドラッグ＆ドロップでも開けます。</p></li><li><span class="step-number">02</span><h3>差分をたどる</h3><p>一覧や「次の違い」「前の違い」で移動。同じ箇所を延々と探す必要はありません。</p></li><li><span class="step-number">03</span><h3>必要な修正へ進む</h3><p>テキストの差分を適用したり、設定した外部エディタで編集したりできます。</p></li></ol><p class="workflow-note">複数の比較は、左側のタブで切り替え。</p></div></section>
+    <section id="pricing" class="pricing wrap" aria-labelledby="pricing-title"><div class="section-heading"><p class="eyebrow">ONE PURCHASE. YOUR TOOL.</p><h2 id="pricing-title">毎月の支払いは、いりません。</h2><p>MrkDiff Hexを、いつもの比較ツールに。</p></div><div class="pricing-grid"><div class="purchase-panel"><p class="product-label">MrkDiff Hex</p><p class="price">$39 <span>USD・買い切り</span></p><ul class="check-list"><li>Mac 2台で利用可能</li><li>本製品の無料アップデートを含む</li><li>14日間の返金保証</li></ul><span class="button secondary" aria-disabled="true">ただいま準備中</span><p class="fine-print">無料トライアルと購入の受付は、配布準備が整い次第開始します。</p></div></div></section>
+    <section class="faq wrap" aria-labelledby="faq-title"><p class="eyebrow">FAQ</p><h2 id="faq-title">よくある質問</h2><div class="faq-list"><details><summary>どのMacで使えますか？</summary><p>macOS 13 Ventura以降に対応しています。Apple SiliconとIntelの両方に対応したMac用アプリです。</p></details><details><summary>比較するファイルはアップロードされますか？</summary><p>ローカルファイルの比較はMac上で処理します。比較のためにファイルをアップロードする必要はありません。購入・ライセンス認証には通信を使用します。</p></details><details><summary>テキストのマージはできますか？</summary><p>選んだ差分を左右どちらかへ適用できます。3-way mergeではありません。JSON・YAMLなど、整形し直した比較表示ではマージを提供しません。</p></details><details><summary>無料のMrDiffとの違いは？</summary><p>MrDiffはターミナルで差分を確認する無料のCLIです。MrkDiff Hexは、バイナリやテキストを左右に並べて確認する有料のGUIアプリです。</p></details></div></section>
+    <section class="closing wrap"><img src="media/mrkdiff-hex-icon.svg" alt="" width="80" height="80" loading="lazy"><h2>違いを、確かめるための道具。</h2><span class="button secondary" aria-disabled="true">ただいま準備中</span></section>
+  </main>
+  <footer class="wrap"><span>© 2026 田畑ひとし</span><div><a href="index.ja.html">無料CLIのMrDiff</a><a href="MrkDiffHex.en.html" lang="en" hreflang="en">English</a></div></footer>
+</body>
+</html>

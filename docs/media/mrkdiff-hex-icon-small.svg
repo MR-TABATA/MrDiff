@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
+  <!-- MrkDiff Hex アイコン（16 / 32px 用の簡略版）。gloss・影・内枠は小さいと消えるだけなので外す。
+       線を太く、ずらし幅を広げて、16px でも重なりと「手前が塗ってある」が残るようにしてある。 -->
+  <defs>
+    <linearGradient id="blk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#26262f"/>
+      <stop offset="1" stop-color="#08080c"/>
+    </linearGradient>
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="80">
+      <stop offset="0" stop-color="#ffe6a6"/>
+      <stop offset="45%" stop-color="#f4b52a"/>
+      <stop offset="100%" stop-color="#bf7d10"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(9.765 9.765) scale(0.8047)">
+    <rect width="100" height="100" rx="23" fill="url(#blk)"/>
+    <g stroke="url(#gold)" stroke-width="9">
+      <circle cx="40" cy="40" r="19" fill="none"/>
+      <circle cx="60" cy="60" r="19" fill="url(#gold)"/>
+    </g>
+  </g>
+</svg>

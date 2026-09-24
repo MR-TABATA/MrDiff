@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>MrkDiff Hex — Binary and text diffs, on your Mac.</title>
+  <meta name="description" content="Compare binary and text files with MrkDiff Hex for Mac. See changed bytes and characters, then jump to the next difference. $39, one-time purchase.">
+  <meta property="og:title" content="MrkDiff Hex — Binary and text diffs, on your Mac.">
+  <meta property="og:description" content="Compare binary and text files with MrkDiff Hex for Mac. See changed bytes and characters, then jump to the next difference. $39, one-time purchase.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html">
+  <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/mrkdiff-hex-still.png">
+  <meta property="og:image:width" content="900">
+  <meta property="og:image:height" content="526">
+  <meta property="og:image:alt" content="MrkDiff Hex comparing two binary files, with side-by-side hex values and a list of differences.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html">
+  <link rel="alternate" hreflang="ja" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.ja.html">
+  <link rel="alternate" hreflang="en" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html">
+  <link rel="alternate" hreflang="x-default" href="https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html">
+  <link rel="icon" type="image/svg+xml" href="media/mrkdiff-hex-icon-small.svg">
+  <link rel="stylesheet" href="mrkdiff-hex.css">
+  <script src="mrkdiff-hex.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header wrap">
+    <a class="brand" href="MrkDiffHex.en.html" aria-label="MrkDiff Hex"><img src="media/mrkdiff-hex-icon-small.svg" width="40" height="40" alt="">MrkDiff <span>Hex</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#features">Features</a><a href="#workflow">How it works</a><a href="#pricing">Pricing</a>
+      <a class="lang-switch" href="MrkDiffHex.ja.html" lang="ja" hreflang="ja">日本語</a>
+    </nav>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-heading"><div><p class="eyebrow">BINARY + TEXT DIFF FOR MAC</p><h1 id="hero-title">Every byte.<br>Every character.<br><em>See what changed.</em></h1></div><img class="hero-icon" src="media/mrkdiff-hex-icon.svg" alt="" width="208" height="208"></div>
+      <p class="lead">Compare binary and text files in one Mac app.<br class="desktop-break">Find a change. Inspect it. Move to the next.</p>
+      <div class="actions"><span class="button secondary" aria-disabled="true">Coming soon</span></div>
+      <ul class="facts"><li>macOS 13 or later</li><li>One-time purchase</li><li>Use on 2 Macs</li></ul>
+      <figure class="app-demo">
+        <div class="demo-topline"><span><span class="live-dot"></span> MrkDiff Hex</span><span class="mono">fw_a.bin ↔ fw_b.bin</span></div>
+        <img id="demo-image" src="media/mrkdiff-hex-still.png" data-animation="media/mrkdiff-hex-demo.gif" data-still="media/mrkdiff-hex-still.png" width="900" height="526" alt="MrkDiff Hex comparing two binary files, with side-by-side hex values and a list of differences." fetchpriority="high">
+        <figcaption><span>The app in action: comparing two binary files and stepping through the differences.</span><button id="demo-toggle" type="button" aria-controls="demo-image" aria-pressed="false" data-play="Play demo" data-pause="Pause demo" hidden>Play demo</button></figcaption>
+      </figure>
+    </section>
+    <section id="features" class="features wrap" aria-labelledby="features-title">
+      <div class="section-heading"><p class="eyebrow">TWO WAYS TO LOOK CLOSER</p><h2 id="features-title">Go beyond “different.”</h2><p>Which byte changed? Which character was edited?<br>Compare both files side by side and find the change that matters.</p></div>
+      <article class="feature-row">
+        <div class="feature-copy"><p class="eyebrow">01 / BINARY</p><h3>Find the bytes<br>that changed.</h3><p>See both files as hexadecimal values and characters, with changed bytes highlighted. Use offsets and the difference list to find your way through the files.</p><ul class="check-list"><li>Jump straight to a change from the difference list</li><li>Choose 8, 16, or 32 bytes per row</li><li>Inspect changes in firmware and binary data</li></ul></div>
+        <figure class="code-figure"><div class="code-header"><span>BINARY DIFF</span><span>OFFSET 000000A0</span></div><div class="byte-example" aria-label="Example of bytes before and after a change"><div class="file-label">A / firmware-before.bin</div><code>4B 52 59 60 <mark>67 6E</mark> 75 7C<br>83 8A 91 98 9F A6 AD B4</code><div class="compare-divider">↓</div><div class="file-label">B / firmware-after.bin</div><code>4B 52 59 60 <mark>FF FF</mark> 75 7C<br>83 8A 91 98 9F A6 AD B4</code></div><figcaption>Illustration: highlighting only the changed bytes</figcaption></figure>
+      </article>
+      <article class="feature-row text-feature">
+        <div class="feature-copy"><p class="eyebrow">02 / TEXT</p><h3>From changed lines<br>to changed characters.</h3><p>Compare text side by side. Additions, deletions, and changes within each line are highlighted, so even a small edit is easy to find.</p><ul class="check-list"><li>Compare source code, configuration files, and writing</li><li>Apply a selected text difference to either side</li><li>Open files in your preferred editor</li></ul></div>
+        <figure class="code-figure"><div class="code-header"><span>TEXT DIFF</span><span>config.ini</span></div><div class="text-example"><div class="file-label">A / before</div><pre><span class="line-number">1</span> [server]
+<span class="line-number">2</span> port = <mark>8080</mark>
+<span class="line-number">3</span> host = localhost</pre><div class="compare-divider">↓</div><div class="file-label">B / after</div><pre><span class="line-number">1</span> [server]
+<span class="line-number">2</span> port = <mark>9090</mark>
+<span class="line-number">3</span> host = localhost</pre></div><figcaption>Illustration: highlighting the change within a line</figcaption></figure>
+      </article>
+    </section>
+    <section id="workflow" class="workflow" aria-labelledby="workflow-title"><div class="wrap"><p class="eyebrow">A SIMPLE WORKFLOW</p><h2 id="workflow-title">Open. Find. Inspect.</h2><ol class="steps"><li><span class="step-number">01</span><h3>Open two files</h3><p>Choose the files for the left and right sides, or drag and drop them into the app.</p></li><li><span class="step-number">02</span><h3>Follow the differences</h3><p>Use the list or the next and previous difference controls to move between changes.</p></li><li><span class="step-number">03</span><h3>Make your next edit</h3><p>Apply a text change to either side, or continue editing in your configured external editor.</p></li></ol><p class="workflow-note">Switch between multiple comparisons using tabs in the sidebar.</p></div></section>
+    <section id="pricing" class="pricing wrap" aria-labelledby="pricing-title"><div class="section-heading"><p class="eyebrow">ONE PURCHASE. YOUR TOOL.</p><h2 id="pricing-title">Yours. Without a subscription.</h2><p>Make MrkDiff Hex your everyday comparison tool.</p></div><div class="pricing-grid"><div class="purchase-panel"><p class="product-label">MrkDiff Hex</p><p class="price">$39 <span>USD · one-time purchase</span></p><ul class="check-list"><li>Use on 2 Macs</li><li>Free updates to this product included</li><li>14-day money-back guarantee</li></ul><span class="button secondary" aria-disabled="true">Coming soon</span><p class="fine-print">The free trial and purchasing will open when distribution is ready.</p></div></div></section>
+    <section class="faq wrap" aria-labelledby="faq-title"><p class="eyebrow">FAQ</p><h2 id="faq-title">A few things to know</h2><div class="faq-list"><details><summary>Which Macs are supported?</summary><p>MrkDiff Hex requires macOS 13 Ventura or later. It supports both Apple Silicon and Intel Macs.</p></details><details><summary>Are my files uploaded?</summary><p>Local files are compared on your Mac. You do not need to upload them for comparison. Purchasing and license activation use a network connection.</p></details><details><summary>Can I merge text changes?</summary><p>You can apply a selected difference to either side. This is not a three-way merge tool. Merging is unavailable for reformatted comparison views, such as JSON and YAML.</p></details><details><summary>How is this different from the free MrDiff?</summary><p>MrDiff is a free command-line tool for checking differences in a terminal. MrkDiff Hex is a paid GUI app for inspecting binary and text files side by side.</p></details></div></section>
+    <section class="closing wrap"><img src="media/mrkdiff-hex-icon.svg" alt="" width="80" height="80" loading="lazy"><h2>A closer look at what changed.</h2><span class="button secondary" aria-disabled="true">Coming soon</span></section>
+  </main>
+  <footer class="wrap"><span>© 2026 Hitoshi Tabata</span><div><a href="index.en.html">MrDiff · Free CLI</a><a href="MrkDiffHex.ja.html" lang="ja" hreflang="ja">日本語</a></div></footer>
+</body>
+</html>
