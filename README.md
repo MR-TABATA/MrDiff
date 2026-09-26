@@ -2,7 +2,7 @@
 
 # MrDiff
 
-**Images, PDFs, binaries, URLs — and text, of course. One command, two answers: do they differ, and where.**
+**Diff anything — text, images, binaries, even two sites. One command: do they differ, and where.**
 
 [日本語](README.ja.md)
 
