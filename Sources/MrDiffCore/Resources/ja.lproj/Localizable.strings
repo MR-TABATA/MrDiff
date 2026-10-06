@@ -2,6 +2,27 @@
 
 "text.identical"       = "違いはありません";
 "text.summary"         = "変更 %d 行・追加 %d 行・削除 %d 行";
+"sqlite.identical"     = "違いなし（SQLite）";
+"sqlite.schema_same_bytes_differ" = "SQLite: スキーマは同じですが、ファイルは違います（行のデータは比べていません）";
+"sqlite.summary"       = "SQLite のスキーマ: 変更 %d・追加 %d・削除 %d";
+"sqlite.kind.table"    = "テーブル";
+"sqlite.kind.index"    = "索引";
+"sqlite.kind.view"     = "ビュー";
+"sqlite.kind.trigger"  = "トリガ";
+"sqlite.column"        = "列 %@: %@";
+"sqlite.definition_changed" = "定義が変わっています（制約・外部キーなど）";
+"sqlite.rows_not_compared" = "行のデータは比べていません（スキーマだけ）。";
+"tf.state.summary"     = "Terraform の state: 変更 %d・追加 %d・削除 %d";
+"tf.plan.summary"      = "Terraform の plan: 変更 %d・追加 %d・削除 %d";
+"tf.state.identical"   = "違いなし（Terraform の state）";
+"tf.plan.identical"    = "違いなし（Terraform の plan）";
+"tf.destroyed"         = "A にあって B に無い（消される）: %d 件 — %@";
+"tf.plan.destroys"     = "A の plan が消すもの %d 件・B の plan が消すもの %d 件";
+"tf.actions"           = "動作: %@ → %@";
+"tf.sensitive_changed" = "（秘密の値が変わった）";
+"tf.sensitive_added"   = "（秘密の値が増えた）";
+"tf.sensitive_removed" = "（秘密の値が消えた）";
+"tf.sensitive_hidden"  = "秘密の値 %d 件を伏せています。--show-secrets で出せます";
 "structured.identical" = "違いはありません";
 "structured.summary"   = "変更 %d 箇所・追加 %d 箇所・削除 %d 箇所";
 "structured.root"      = "（ルート）";
@@ -23,7 +44,7 @@
 "error.cannot_open"    = "開けません: %@";
 "error.not_an_image"   = "画像として読めません: %@";
 "error.cannot_decode"  = "読み込めません: %@";
-"error.usage"          = "使い方: mrdiff [--version] [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a と b はファイルか http(s) の URL。--clipboard のときは 1 つだけ渡す\n       mrdiff --help でオプションの一覧が出ます";
+"error.usage"          = "使い方: mrdiff [--version] [--exit-code] [-q|--quiet] [--oneline] [--relative] [--show-secrets] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a と b はファイル・http(s) の URL・標準入力（-）。--clipboard のときは 1 つだけ渡す\n       mrdiff --help でオプションの一覧が出ます";
 "error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";
 "error.bad_color"      = "--color には always / never / auto を指定してください";
 "error.mixed_kinds"    = "テキストとテキストでないものは比べられません";
@@ -40,13 +61,27 @@
 
 /* 入れ物（ファイル・URL・クリップボード）。 */
 "input.clipboard"      = "クリップボード";
+"input.stdin"          = "標準入力";
 "error.http_status"    = "%2$@ が HTTP %1$d を返しました";
 "error.fetch_failed"   = "%@ を取得できません: %@";
 "error.empty_clipboard" = "クリップボードが空です（または比べられるものが入っていません）";
 "error.no_clipboard"   = "この環境ではクリップボードを使えません";
+"error.stdin_tty"      = "\"-\" は標準入力を読みますが、何も流れてきていません（標準入力が端末です）。たとえば cat a.txt | mrdiff - b.txt のように流してください";
+"error.stdin_twice"    = "標準入力は 1 回しか読めないので、\"-\" は片側にしか置けません";
+"error.quiet_json"     = "--quiet は何も出さないので、--json とは一緒に使えません";
+"error.mixed_sqlite"   = "片方だけが SQLite のデータベースなので、比べません";
+"error.sqlite_open"    = "SQLite として開けません: %@";
+"error.sqlite_read"    = "SQLite のスキーマを読めません: %@";
+"note.sqlite_unreadable" = "SQLite として読めませんでした（%@）。バイナリとして比べました";
+"error.terraform_mixed" = "片方だけが Terraform の state / plan（または種類が違う）なので、比べません。普通の JSON として比べると秘密の値が出てしまうためです";
+"error.show_secrets_flag" = "--show-secrets は、Terraform の state か plan を 2 つ比べるときだけ使えます";
+"error.quiet_oneline"  = "--quiet は何も出さず、--oneline は 1 行出すので、一緒には使えません";
+"error.bad_completions" = "--completions には bash・zsh・fish のどれかを渡します";
 "error.clipboard_needs_one" = "--clipboard は、比べる相手のファイルか URL を 1 つ取ります";
 "note.fetched"         = "%@ と %@ を取得しました";
 "note.redirected"      = "%@ は %@ へ飛ばされました";
+"note.line_endings"  = "改行コードが違います（A: %@、B: %@）。CRLF と LF は同じものとして比べています。";
+"note.line_endings.cr" = "CR だけの区切り（古い Mac 形式）は、ここでは行の区切りと見ないので、そのファイルは 1 本の長い行として読みます。";
 
 /* サイト diff（git 管理下の公開フォルダ × 公開中のサイト）。 */
 "site.changed"         = "違う   %@";
@@ -91,8 +126,13 @@
 
 /* --help。スイッチごとに 1 行。 */
 "help.usage"           = "使い方: mrdiff [オプション] <a> <b>\n        mrdiff [オプション] <フォルダA> <フォルダB>\n        mrdiff --clipboard <b>\n        mrdiff --site <https://base> <dir>\n        mrdiff --ssh <dir> <host:path>";
-"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイルか http(s) の URL。\n何として比べるか（テキスト・画像・PDF・アーカイブ（zip / docx / xlsx / pptx / epub…）・フォント・バイナリ）は\n名前ではなく中身で決めます。フォルダ 2 つなら、どのファイルが違うか・片側にしか無いかを言います。絵は出しません。";
+"help.inputs"          = "2 つを比べて、違うかどうかと、どこが違うかを言います。a と b はファイル・http(s) の URL・標準入力（-）。\n何として比べるか（テキスト・画像・PDF・アーカイブ（zip / docx / xlsx / pptx / epub…）・フォント・バイナリ）は\n名前ではなく中身で決めます。フォルダ 2 つなら、どのファイルが違うか・片側にしか無いかを言います。絵は出しません。";
 "help.exit_code"       = "違えば 1 で終わる（既定はどちらでも 0。実行できなければ 2）";
+"help.quiet"           = "何も出さず、違うときだけ終了コード 1 を返す（--exit-code を含む。エラーは stderr に出る）";
+"help.show_secrets"    = "Terraform の state / plan の比較で、秘密の値も出す（既定は伏せる）";
+"help.oneline"         = "結果を 1 行の要約だけにして出す（エラーは今までどおり stderr）";
+"help.relative"        = "エラーに出るファイルのパスを、カレントディレクトリからの相対パスで言う";
+"help.completions"     = "シェル補完のスクリプト（bash・zsh・fish）を出して終わる";
 "help.json"            = "1 行の JSON で出す。訳さない";
 "help.tolerance"       = "画像・PDF：チャンネルごとに ±N までは同じとみなす（既定 0 ＝ 完全一致）";
 "help.ignore_alpha"    = "画像：透明度を比べない";

@@ -115,6 +115,76 @@ func renderStructured(_ d: StructuredDiff, style s: Style, into out: inout Out) 
     }
 }
 
+/// Terraform の state / plan の比較。**秘密の値は、ここへ来る前に伏せてある**（`compareTerraform`）。
+/// 資源が丸ごと足された・消えたときは、属性を出さない（名前だけ）。
+func renderTerraform(_ d: TerraformDiff, hiddenNote: Bool, style s: Style, into out: inout Out) {
+    func names(_ list: [String]) -> String {
+        let shown = list.prefix(5).joined(separator: ", ")
+        return list.count > 5 ? shown + ", …" : shown
+    }
+    if d.kind == .state, !d.destroyedInB.isEmpty {
+        out.line("\(s.red)  ⚠ \(t("tf.destroyed", d.destroyedInB.count, names(d.destroyedInB)))\(s.reset)")
+    }
+    if d.kind == .plan, !d.plannedDestroysA.isEmpty || !d.plannedDestroysB.isEmpty {
+        out.line("\(s.red)  ⚠ \(t("tf.plan.destroys", d.plannedDestroysA.count, d.plannedDestroysB.count))\(s.reset)")
+    }
+    for r in d.rows {
+        switch r.status {
+        case .added:   out.line("\(s.green) + \(r.address)\(s.reset)")
+        case .removed: out.line("\(s.red) - \(r.address)\(s.reset)")
+        case .changed:
+            out.line("\(s.cyan) ~ \(r.address)\(s.reset)")
+            if d.kind == .plan, r.actionsA != r.actionsB {
+                out.line("     " + t("tf.actions", (r.actionsA ?? []).joined(separator: "+"), (r.actionsB ?? []).joined(separator: "+")))
+            }
+            for c in r.changes {
+                let label = c.path.isEmpty ? t("structured.root") : c.path
+                if c.sensitive {
+                    let key = c.kind == .added ? "tf.sensitive_added" : (c.kind == .removed ? "tf.sensitive_removed" : "tf.sensitive_changed")
+                    out.line("     \(label): \(s.dim)\(t(key))\(s.reset)")
+                    continue
+                }
+                switch c.kind {
+                case .removed: out.line("     \(label): \(s.red)- \(c.before.map { shortDescription($0) } ?? "")\(s.reset)")
+                case .added:   out.line("     \(label): \(s.green)+ \(c.after.map { shortDescription($0) } ?? "")\(s.reset)")
+                case .changed:
+                    out.line("     \(label): \(c.before.map { shortDescription($0) } ?? "?") → \(c.after.map { shortDescription($0) } ?? "?")")
+                }
+            }
+        }
+    }
+    if hiddenNote, d.hiddenCount > 0 {
+        out.line("\(s.dim)  \(t("tf.sensitive_hidden", d.hiddenCount))\(s.reset)")
+    }
+}
+
+/// SQLite のスキーマの差。**行のデータは比べていない**ことを、最後に必ず言う。
+func renderSQLite(_ d: SQLiteSchemaDiff, style s: Style, into out: inout Out) {
+    func kind(_ k: String) -> String { t("sqlite.kind." + k) }
+    for n in d.tablesAdded { out.line("\(s.green) + \(kind("table")) \(n)\(s.reset)") }
+    for n in d.tablesRemoved { out.line("\(s.red) - \(kind("table")) \(n)\(s.reset)") }
+    for c in d.tablesChanged {
+        out.line("\(s.cyan) ~ \(kind("table")) \(c.table)\(s.reset)")
+        for ch in c.columns {
+            switch ch.kind {
+            case .added:   out.line("     \(s.green)+ \(t("sqlite.column", ch.column, ch.shape ?? ""))\(s.reset)")
+            case .removed: out.line("     \(s.red)- \(t("sqlite.column", ch.column, ch.shape ?? ""))\(s.reset)")
+            case .changed: out.line("     \(s.cyan)~ \(t("sqlite.column", ch.column, ch.details.joined(separator: "; ")))\(s.reset)")
+            }
+        }
+        if c.definitionChanged { out.line("     " + t("sqlite.definition_changed")) }
+    }
+    func objects(_ k: String, added: [String], removed: [String], changed: [String]) {
+        for n in added { out.line("\(s.green) + \(kind(k)) \(n)\(s.reset)") }
+        for n in removed { out.line("\(s.red) - \(kind(k)) \(n)\(s.reset)") }
+        for n in changed { out.line("\(s.cyan) ~ \(kind(k)) \(n)\(s.reset)") }
+    }
+    objects("index", added: d.indexesAdded, removed: d.indexesRemoved, changed: d.indexesChanged)
+    objects("view", added: d.viewsAdded, removed: d.viewsRemoved, changed: d.viewsChanged)
+    objects("trigger", added: d.triggersAdded, removed: d.triggersRemoved, changed: d.triggersChanged)
+    out.line("\(s.dim)  \(t("sqlite.rows_not_compared"))\(s.reset)")
+}
+
 /// 前後に見せる行数。unified diff と同じ 3。
 let contextLines = 3
 

@@ -29,8 +29,12 @@ public enum JSONOutput {
 
     // MARK: - 種類ごと
 
-    public static func text(_ d: TextDiff, redirects: [Redirect] = []) -> [String: Any] {
+    /// `lineEndings` は改行コードが違うときだけ（キーごと出さない）。違いは diff には出ない（CRLF と LF は
+    /// 同じ扱い）ので、機械にも別に伝える。
+    public static func text(_ d: TextDiff, redirects: [Redirect] = [],
+                            lineEndings: (a: LineEnding, b: LineEnding)? = nil) -> [String: Any] {
         var o: [String: Any] = ["kind": "text"]
+        if let e = lineEndings { o["line_endings"] = ["a": e.a.rawValue, "b": e.b.rawValue] }
         if d.isIdentical {
             o["result"] = "identical"
         } else {
@@ -291,13 +295,13 @@ public enum JSONOutput {
         return String(decoding: data, as: UTF8.self)
     }
 
-    private static func addRedirects(_ o: inout [String: Any], _ rs: [Redirect]) {
+    static func addRedirects(_ o: inout [String: Any], _ rs: [Redirect]) {
         guard !rs.isEmpty else { return }
         o["redirected"] = rs.map { ["from": $0.from, "to": $0.to] }
     }
 
     /// `StructuredValue` を `JSONSerialization` に渡せる形へ戻す（`JSONStructured.parse` の逆）。
-    private static func toJSONObject(_ v: StructuredValue) -> Any {
+    static func toJSONObject(_ v: StructuredValue) -> Any {
         switch v {
         case .null: return NSNull()
         case .bool(let b): return b

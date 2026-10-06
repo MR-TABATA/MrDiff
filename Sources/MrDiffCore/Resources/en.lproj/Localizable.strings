@@ -2,6 +2,27 @@
 
 "text.identical"       = "No differences";
 "text.summary"         = "%d changed, %d added, %d removed";
+"sqlite.identical"     = "No differences (SQLite)";
+"sqlite.schema_same_bytes_differ" = "SQLite: the schemas are identical, but the files differ (row data is not compared)";
+"sqlite.summary"       = "SQLite schema: %d changed, %d added, %d removed";
+"sqlite.kind.table"    = "table";
+"sqlite.kind.index"    = "index";
+"sqlite.kind.view"     = "view";
+"sqlite.kind.trigger"  = "trigger";
+"sqlite.column"        = "column %@: %@";
+"sqlite.definition_changed" = "definition changed (constraints, foreign keys…)";
+"sqlite.rows_not_compared" = "Row data was not compared (the schema only).";
+"tf.state.summary"     = "Terraform state: %d changed, %d added, %d removed";
+"tf.plan.summary"      = "Terraform plan: %d changed, %d added, %d removed";
+"tf.state.identical"   = "No differences (Terraform state)";
+"tf.plan.identical"    = "No differences (Terraform plan)";
+"tf.destroyed"         = "%d in A and not in B (destroyed): %@";
+"tf.plan.destroys"     = "plan A destroys %d, plan B destroys %d";
+"tf.actions"           = "actions: %@ → %@";
+"tf.sensitive_changed" = "(sensitive value changed)";
+"tf.sensitive_added"   = "(sensitive value added)";
+"tf.sensitive_removed" = "(sensitive value removed)";
+"tf.sensitive_hidden"  = "%d sensitive value(s) hidden; --show-secrets shows them";
 "structured.identical" = "No differences";
 "structured.summary"   = "%d changed, %d added, %d removed";
 "structured.root"      = "(root)";
@@ -23,7 +44,7 @@
 "error.cannot_open"    = "cannot open %@";
 "error.not_an_image"   = "not an image: %@";
 "error.cannot_decode"  = "cannot decode %@";
-"error.usage"          = "usage: mrdiff [--version] [--exit-code] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a and b may be files or http(s) URLs; with --clipboard, give one\n       mrdiff --help lists every option";
+"error.usage"          = "usage: mrdiff [--version] [--exit-code] [-q|--quiet] [--oneline] [--relative] [--show-secrets] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a and b may be files, http(s) URLs, or - for standard input; with --clipboard, give one\n       mrdiff --help lists every option";
 "error.bad_tolerance"  = "--tolerance needs a number 0 or greater";
 "error.bad_color"      = "--color takes always, never or auto";
 "error.mixed_kinds"    = "cannot compare text with a non-text file";
@@ -40,13 +61,27 @@
 
 /* 入れ物（ファイル・URL・クリップボード）。 */
 "input.clipboard"      = "clipboard";
+"input.stdin"          = "stdin";
 "error.http_status"    = "HTTP %d from %@";
 "error.fetch_failed"   = "cannot fetch %@: %@";
 "error.empty_clipboard" = "the clipboard is empty (or holds nothing that can be compared)";
 "error.no_clipboard"   = "the clipboard is not available on this system";
+"error.stdin_tty"      = "\"-\" reads standard input, but nothing is piped in (stdin is the terminal). Pipe something in, e.g. cat a.txt | mrdiff - b.txt";
+"error.stdin_twice"    = "standard input can only be read once, so \"-\" can stand for one side only";
+"error.quiet_json"     = "--quiet prints nothing, so it cannot be combined with --json";
+"error.mixed_sqlite"   = "only one side is a SQLite database, so they cannot be compared";
+"error.sqlite_open"    = "cannot open as SQLite: %@";
+"error.sqlite_read"    = "cannot read the SQLite schema: %@";
+"note.sqlite_unreadable" = "could not read this as SQLite (%@); compared as a binary";
+"error.terraform_mixed" = "only one side is a Terraform state/plan (or they are different kinds), so they cannot be compared — a plain JSON comparison would print the secrets";
+"error.show_secrets_flag" = "--show-secrets only applies when comparing two Terraform state or plan files";
+"error.quiet_oneline"  = "--quiet prints nothing and --oneline prints one line, so they cannot be combined";
+"error.bad_completions" = "--completions takes bash, zsh or fish";
 "error.clipboard_needs_one" = "--clipboard takes one file or URL to compare against";
 "note.fetched"         = "fetched %@ and %@";
 "note.redirected"      = "%@ redirected to %@";
+"note.line_endings"  = "line endings differ (A: %@, B: %@); CRLF and LF are compared as the same.";
+"note.line_endings.cr" = "A lone CR (old Mac) is not a line break here, so that file reads as one long line.";
 
 /* サイト diff（git 管理下の公開フォルダ × 公開中のサイト）。 */
 "site.changed"         = "changed   %@";
@@ -91,8 +126,13 @@
 
 /* --help。スイッチごとに 1 行。 */
 "help.usage"           = "usage: mrdiff [options] <a> <b>\n       mrdiff [options] <dirA> <dirB>\n       mrdiff --clipboard <b>\n       mrdiff --site <https://base> <dir>\n       mrdiff --ssh <dir> <host:path>";
-"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files or\nhttp(s) URLs; what they are is decided from the content, not the name — text, image,\nPDF, archive (zip, docx, xlsx, pptx, epub…), font or binary. Two folders: which files differ, or exist\non one side only. Nothing is rendered.";
+"help.inputs"          = "Compares two things and says whether they differ, and where. a and b may be files, http(s) URLs,\nor - for standard input; what they are is decided from the content, not the name — text, image,\nPDF, archive (zip, docx, xlsx, pptx, epub…), font or binary. Two folders: which files differ, or exist\non one side only. Nothing is rendered.";
 "help.exit_code"       = "exit 1 when they differ (default: 0 either way; 2 when it could not run)";
+"help.quiet"           = "print nothing, only exit 1 when they differ (implies --exit-code; errors still go to stderr)";
+"help.show_secrets"    = "show sensitive values in a Terraform state/plan comparison (hidden by default)";
+"help.oneline"         = "print only a one-line summary (the result in one line; errors still go to stderr)";
+"help.relative"        = "show file paths in error messages relative to the current directory";
+"help.completions"     = "print a shell completion script (bash, zsh or fish) and exit";
 "help.json"            = "one line of JSON, never translated";
 "help.tolerance"       = "images/PDFs: treat per-channel gaps up to N as the same (default 0 = exact)";
 "help.ignore_alpha"    = "images: do not compare the alpha channel";

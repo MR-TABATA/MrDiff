@@ -101,6 +101,7 @@ mrdiff --text a.pdf b.pdf             # PDF ── どの行の文言が変わ�
 mrdiff a.bin b.bin                    # バイナリ ── 要約
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # クリップボード vs ファイル
+cat a.txt | mrdiff - b.txt            # 標準入力 vs ファイル（- が標準入力。片側だけ）
 mrdiff --site https://example.com ./site   # 公開中のサイトは ./site と合っているか
 mrdiff local.conf host:/etc/app.conf       # ssh 越しのファイル 1 つ
 mrdiff --ssh ./site host:/var/www          # ssh 越しのツリー全体、両方向
@@ -113,6 +114,7 @@ mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
 mrdiff --version                      # mrdiff 0.7.1
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
+mrdiff -q a.png b.png                 # 何も出さず、違えば 1 で終わる（--exit-code を含む）
 mrdiff --json a.bin b.bin             # 機械向け
 
 mrdiff --tolerance=2 a.png b.jpg      # チャンネルごとに ±2 までは同じとみなす
@@ -140,6 +142,11 @@ $ mrdiff a.log b.log
 
 行番号は左右 2 列。消えた 7 行目と増えた 7 行目は同じ行ではなく、1 列ではどちらが
 どちらか言えない。
+
+**改行コード。** CRLF と LF は同じものとして比べるので、Windows で保存したファイルと、同じ内容の Mac のファイルは
+`No differences` になる。2 つの改行コードが違うときは、サマリの下にそう言う（`改行コードが違います（A: LF、B: CRLF）…`）。
+`--json` には `"line_endings":{"a":"LF","b":"CRLF"}` が付く。終了コードは変わらない。CR だけの区切り（古い Mac）は
+ここでは行の区切りと見ない。そのファイルは 1 本の長い行として読み、注記がそう言う。
 
 どの比較を走らせるかは**拡張子ではなく中身**で決める。UTF-8 として読めて NUL バイトが
 無い 2 つは、行の差分になる ── ただし両方が JSON として、または下で挙げる YAML の
@@ -261,6 +268,9 @@ JavaScript は走らせず、描画もしないので、ブラウザで見える
 `mrdiff --clipboard notes.md` は、いまコピーしたものをファイルか URL と比べる。
 テキストがあればテキストとして、無ければ PNG か TIFF の画像として取る ──
 スクリーンショットをコピーして「さっきと同じか」と聞く場面のため。
+
+`-` は標準入力：`git show HEAD~1:notes.md | mrdiff - notes.md` で、古い版をパイプからそのまま比べられる。
+片側にしか置けず（標準入力は 1 回しか読めない）、何も流していないときは、Ctrl-D を待たずにそう言って止まる。
 
 ### 公開中のサイトと、その元のフォルダ
 
@@ -399,6 +409,8 @@ $ mrdiff --json a.png b.png
 
 終了コード：`0` 実行できた（違っても違わなくても）、`1` 違いがあり `--exit-code` を
 付けていた、`2` 実行できなかった（理由は stderr へ。stdout には何も出ない）。
+`--quiet` / `-q` は何も出さず、終了コードだけで答える（`0` 同じ、`1` 違う）。`--exit-code` を含み、`--json` とは
+一緒に使えない。エラーは今までどおり stderr に出る。
 
 ### CI で
 

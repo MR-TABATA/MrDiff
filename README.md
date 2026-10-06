@@ -103,6 +103,7 @@ mrdiff --text a.pdf b.pdf             # PDF — which lines of text changed
 mrdiff a.bin b.bin                    # binary — summary
 mrdiff https://example.com/a https://example.com/b
 mrdiff --clipboard notes.md           # clipboard vs file
+cat a.txt | mrdiff - b.txt            # standard input vs file (- is stdin, for one side)
 mrdiff --site https://example.com ./site   # is the live site in sync with ./site?
 mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
@@ -115,6 +116,7 @@ mrdiff --help                         # every option, one line each
 mrdiff --help --lang=ja               # the same in Japanese
 mrdiff --version                      # mrdiff 0.7.1
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
+mrdiff -q a.png b.png                 # print nothing; exit 1 if they differ (implies --exit-code)
 mrdiff --json a.bin b.bin             # machine readable
 
 mrdiff --tolerance=2 a.png b.jpg      # ±2 per channel counts as the same
@@ -143,6 +145,12 @@ point; painting the whole line red is not enough.
 
 Line numbers are two columns, left and right. A deleted line 7 and an added line
 7 are not the same line, and one column cannot say which is which.
+
+**Line endings.** CRLF and LF are compared as the same, so a file saved on Windows against
+the same file on a Mac says `No differences`. When the two files use different line endings,
+it says so under the summary (`line endings differ (A: LF, B: CRLF); …`), and `--json` carries
+`"line_endings":{"a":"LF","b":"CRLF"}` — the exit code does not change. A lone CR (old Mac)
+is not a line break here: that file reads as one long line, and the note says so.
 
 Which kind of comparison runs is decided by **content, not extension**: two files
 that decode as UTF-8 and hold no NUL byte get the line diff — unless both sides
@@ -279,6 +287,10 @@ compared as a binary. Once the bytes are in hand, everything takes the same path
 Text is taken as text; if the clipboard holds no text, a PNG or TIFF image is taken
 instead — copying a screenshot and asking "is this the same as before?" is the case
 this is for.
+
+`-` stands for standard input: `git show HEAD~1:notes.md | mrdiff - notes.md` compares an old
+version straight from a pipe. It can stand for one side only (stdin is read once), and with
+nothing piped in it says so instead of waiting for you to press Ctrl-D.
 
 ### A deployed site vs the folder it came from
 
@@ -424,6 +436,8 @@ $ mrdiff --json a.png b.png
 
 Exit codes: `0` it ran (differ or not), `1` they differ and `--exit-code` was
 given, `2` it could not run (the reason goes to stderr; nothing goes to stdout).
+`--quiet` / `-q` prints nothing at all and answers only with the exit code (`0` same, `1`
+differ); it implies `--exit-code`, cannot be combined with `--json`, and errors still go to stderr.
 
 ### In CI
 

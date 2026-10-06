@@ -37,6 +37,39 @@ final class InputTests: XCTestCase {
         if case .file = Input.parse("./docs/http-notes.md") {} else { XCTFail("URL にしてしまった") }
     }
 
+    // MARK: - 標準入力（`-`）
+
+    /// `-` だけが標準入力。`-x` のようなつまみ、`--` や `-1` という名前のファイルとは混ざらない。
+    func testDashAloneIsStandardInput() {
+        if case .stdin = Input.parse("-") {} else { XCTFail("- を標準入力として読めていない") }
+        for arg in ["--", "-x", "-1", "./-", "a-b"] {
+            if case .stdin = Input.parse(arg) { XCTFail("\(arg) を標準入力にしてしまった") }
+        }
+    }
+
+    func testStandardInputHasAName() {
+        XCTAssertFalse(Input.stdin.label.isEmpty)
+    }
+
+    /// 流し込まれたものを最後まで読む。端末でなければ（パイプ）読める。
+    func testStandardInputIsReadToTheEnd() throws {
+        let pipe = Pipe()
+        pipe.fileHandleForWriting.write(Data("a\nb\n".utf8))
+        try pipe.fileHandleForWriting.close()
+        XCTAssertEqual(try readStandardInput(from: pipe.fileHandleForReading), Data("a\nb\n".utf8))
+    }
+
+    /// 何も流していない（端末のまま）なら、読まずに断る。読むと Ctrl-D まで固まって見える。
+    func testStandardInputOnATerminalIsRefused() throws {
+        var master: Int32 = 0, slave: Int32 = 0
+        guard openpty(&master, &slave, nil, nil, nil) == 0 else { throw XCTSkip("pty を開けない環境") }
+        defer { close(master); close(slave) }
+        let handle = FileHandle(fileDescriptor: slave, closeOnDealloc: false)
+        XCTAssertThrowsError(try readStandardInput(from: handle)) { error in
+            guard case InputError.stdinIsTerminal = error else { return XCTFail("\(error)") }
+        }
+    }
+
     // MARK: - 名前
 
     /// **URL は縮めない。** 読みにくさより、別の URL と取り違えるほうが困る。

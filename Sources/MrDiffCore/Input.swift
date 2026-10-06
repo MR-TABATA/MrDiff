@@ -20,6 +20,8 @@ public enum Input {
     case file(URL)
     case url(URL)
     case clipboard
+    /// 標準入力（`-`）。`cat a.txt | mrdiff - b.txt`。**1 回しか読めない**ので、両側には使えない。
+    case stdin
     /// `host:/path`。**scp で取る**（認証は OS の ssh に任せる）。
     case ssh(host: String, path: String)
 
@@ -28,6 +30,8 @@ public enum Input {
     /// **`http://` と `https://` だけを URL として扱う。** `file://` も `ftp://` も
     /// ファイル扱いにしない ―― 黙って別のものを取りに行くより、開けないと言うほうがよい。
     public static func parse(_ argument: String) -> Input {
+        // `-` だけは標準入力（`cat`・`diff` と同じ約束）。`-x` のようなつまみとは混ざらない。
+        if argument == "-" { return .stdin }
         if argument.hasPrefix("http://") || argument.hasPrefix("https://"),
            let u = URL(string: argument) {
             return .url(u)
@@ -68,6 +72,7 @@ public enum Input {
         case .file(let u):  return u.lastPathComponent
         case .url(let u):   return u.absoluteString
         case .clipboard:    return t("input.clipboard")
+        case .stdin:        return t("input.stdin")
         case .ssh(let h, let p): return "\(h):\(p)"
         }
     }
@@ -83,6 +88,7 @@ public enum Input {
         case .file(let u):  return Fetched(data: try readFile(u), finalURL: nil)
         case .url(let u):   return try fetchDetailed(u, timeout: timeout)
         case .clipboard:    return Fetched(data: try readClipboard(), finalURL: nil)
+        case .stdin:        return Fetched(data: try readStandardInput(), finalURL: nil)
         case .ssh(let h, let p): return Fetched(data: try scpFetch(host: h, path: p), finalURL: nil)
         }
     }
@@ -93,6 +99,7 @@ public enum InputError: Error, CustomStringConvertible {
     case network(String, URL)
     case emptyClipboard
     case clipboardUnavailable
+    case stdinIsTerminal
     case sshFailed(String, String)   // (host:path, stderr)
 
     public var description: String {
@@ -101,6 +108,7 @@ public enum InputError: Error, CustomStringConvertible {
         case .network(let why, let u):  return t("error.fetch_failed", u.absoluteString, why)
         case .emptyClipboard:           return t("error.empty_clipboard")
         case .clipboardUnavailable:     return t("error.no_clipboard")
+        case .stdinIsTerminal:          return t("error.stdin_tty")
         case .sshFailed(let target, let why): return t("error.ssh_failed", target, why)
         }
     }
@@ -198,6 +206,15 @@ public func readClipboard() throws -> Data {
     #endif
 }
 
+
+// MARK: - 標準入力
+
+/// 標準入力を最後まで読む。**端末のままなら読まずに断る** ―― 何も流していないのに読もうとすると、
+/// 利用者が Ctrl-D を押すまで黙って止まる（固まったように見える）。`handle` はテスト用。
+public func readStandardInput(from handle: FileHandle = .standardInput) throws -> Data {
+    if isatty(handle.fileDescriptor) == 1 { throw InputError.stdinIsTerminal }
+    return handle.readDataToEndOfFile()
+}
 
 // MARK: - SSH
 

@@ -39,22 +39,7 @@ if args.contains("--help") || args.contains("-h") {
     print()
     print(t("help.inputs"))
     print()
-    let options: [(String, String)] = [
-        ("--exit-code",           "help.exit_code"),
-        ("--json",                "help.json"),
-        ("--tolerance=N",         "help.tolerance"),
-        ("--offset=dx,dy",        "help.offset"),
-        ("--ignore-alpha",        "help.ignore_alpha"),
-        ("--text",                "help.text"),
-        ("--color=auto|always|never", "help.color"),
-        ("--no-pager",            "help.no_pager"),
-        ("--clipboard",           "help.clipboard"),
-        ("--site <https://base> <dir>", "help.site"),
-        ("--ssh <dir> <host:path>", "help.ssh"),
-        ("--lang=en|ja",          "help.lang"),
-        ("--version",             "help.version"),
-        ("--help",                "help.help"),
-    ]
+    let options = CLIOptions.all.map { ($0.usage, $0.helpKey) }
     let width = options.map { $0.0.count }.max() ?? 0
     for (flag, key) in options {
         let pad = String(repeating: " ", count: width - flag.count + 2)
@@ -68,16 +53,81 @@ if args.contains("--help") || args.contains("-h") {
 }
 
 let wantsJSON = args.contains("--format=json") || args.contains("--json")
-let wantsExitCode = args.contains("--exit-code")
+// `--quiet` は「何も出さず、終了コードだけ返す」。終了コードが答えなので `--exit-code` を含む。
+let quiet = args.contains("--quiet") || args.contains("-q")
+let wantsExitCode = args.contains("--exit-code") || quiet
 let ignoreAlpha = args.contains("--ignore-alpha")
 let noPager = args.contains("--no-pager")
 let useClipboardFlag = args.contains("--clipboard")
 let wantsText = args.contains("--text")
-let files = args.filter { !$0.hasPrefix("-") }
+// Terraform の state / plan を比べるときだけ、秘密の値を出す（既定は伏せる）。
+let showSecrets = args.contains("--show-secrets")
+// `-` だけは標準入力を指す引数なので、つまみとして落とさない。
+let files = args.filter { !$0.hasPrefix("-") || $0 == "-" }
 
 func die(_ message: String) -> Never {
     FileHandle.standardError.write(Data(("mrdiff: " + message + "\n").utf8))
     exit(2)
+}
+
+// **`--completions bash|zsh|fish`**（`=` でも書ける）。スクリプトを標準出力へ出して終わる。
+// Homebrew の `generate_completions_from_executable(bin/"mrdiff", "--completions")` が呼ぶ形。
+if let i = args.firstIndex(where: { $0 == "--completions" || $0.hasPrefix("--completions=") }) {
+    let shell = args[i].hasPrefix("--completions=")
+        ? String(args[i].dropFirst("--completions=".count))
+        : (i + 1 < args.count ? args[i + 1] : "")
+    guard let script = Completions.script(for: shell) else { die(t("error.bad_completions")) }
+    print(script, terminator: "")
+    exit(0)
+}
+
+// **効かない組み合わせは断る**（黙って片方を無視しない）。`--quiet` は何も出さないので、出力の形を選ぶ
+// `--json` と並べられない。標準入力は 1 回しか読めないので、両側に `-` は置けない。
+if quiet && wantsJSON { die(t("error.quiet_json")) }
+if files.filter({ $0 == "-" }).count > 1 { die(t("error.stdin_twice")) }
+// `--quiet`: 画面に出るものは全部、ここで捨てる（エラーは stderr なので残る）。比較の経路ごとに
+// 出力を分岐させるより、出口を 1 か所で塞ぐほうが、あとから経路が増えても漏れない。
+if quiet {
+    let devNull = open("/dev/null", O_WRONLY)
+    if devNull >= 0 { dup2(devNull, STDOUT_FILENO); close(devNull) }
+}
+
+// `--relative`: エラーに出るファイルのパスを、カレントディレクトリからの相対パスにする（既定は絶対パス）。
+PathDisplay.relativeToCurrentDirectory = args.contains("--relative")
+
+// **`--oneline`: 結果を要約の 1 行だけにする。** 要約の行は、比較の種類ごとに、結果を作る場所が
+// `headline(…)` で印を付ける（フォルダやアーカイブは要約が最後の行なので、先頭の行を機械的に拾うと
+// ずれる）。印が無いまま終わったときだけ、出力の最初の空でない行に戻る。
+// 出力は一時ファイルへ逃がしておき、終了時（`exit` は atexit を通る）に 1 行だけ本物の標準出力へ書く。
+let oneline = args.contains("--oneline")
+if oneline && quiet { die(t("error.quiet_oneline")) }
+var onelineHeadline: String? = nil
+var onelineRealStdout: Int32 = -1
+var onelineCapture: UnsafeMutablePointer<FILE>? = nil
+@discardableResult
+func headline(_ s: String) -> String {
+    if onelineHeadline == nil { onelineHeadline = s }
+    return s
+}
+func finishOneline() {
+    guard oneline, let capture = onelineCapture, onelineRealStdout >= 0 else { return }
+    fflush(stdout)
+    rewind(capture)
+    var bytes = [UInt8](), buf = [UInt8](repeating: 0, count: 4096)
+    while case let n = fread(&buf, 1, buf.count, capture), n > 0 { bytes += buf[0..<n] }
+    let text = String(decoding: bytes, as: UTF8.self)
+    let first = text.split(whereSeparator: \.isNewline).first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    let line = onelineHeadline ?? first.map(String.init) ?? ""
+    if !line.isEmpty { let out = Array((line + "\n").utf8); _ = write(onelineRealStdout, out, out.count) }
+}
+if oneline {
+    fflush(stdout)
+    onelineRealStdout = dup(STDOUT_FILENO)
+    onelineCapture = tmpfile()
+    if let c = onelineCapture, onelineRealStdout >= 0 {
+        dup2(fileno(c), STDOUT_FILENO)
+        atexit { finishOneline() }
+    }
 }
 
 // **`--tolerance=N` の形だけ受ける。**空白区切り（`--tolerance 2`）を許すと、
@@ -147,9 +197,9 @@ if args.contains("--ssh") {
         for r in d.onlyLeft  { print(t("tree.only_local", r.path)) }
         for r in d.onlyRight { print(t("tree.only_remote", r.path)) }
         if d.allIdentical {
-            print(t("tree.in_sync", d.identical.count))
+            print(headline(t("tree.in_sync", d.identical.count)))
         } else {
-            print(t("tree.summary", d.changed.count, d.onlyLeft.count, d.onlyRight.count))
+            print(headline(t("tree.summary", d.changed.count, d.onlyLeft.count, d.onlyRight.count)))
         }
     }
     exit(d.allIdentical ? 0 : (wantsExitCode ? 1 : 0))
@@ -170,7 +220,7 @@ if let siteFlagIndex = args.firstIndex(of: "--site") {
     let tracked: [String]
     do { tracked = try GitFiles.tracked(in: dir) }
     catch { die("\(error)") }
-    if tracked.isEmpty { die(t("error.site_empty", dir.path)) }
+    if tracked.isEmpty { die(t("error.site_empty", PathDisplay.text(dir))) }
 
     let entries = SiteMap.entries(base: baseURL, relativePaths: tracked)
     let result = SiteDiff.compare(
@@ -192,9 +242,9 @@ if let siteFlagIndex = args.firstIndex(of: "--site") {
         for r in result.missing { print(t("site.missing", r.entry.localPath)) }
         for r in result.errored { print(t("site.error", r.entry.localPath)) }
         if result.allInSync {
-            print(t("site.in_sync", entries.count))
+            print(headline(t("site.in_sync", entries.count)))
         } else {
-            print(t("site.summary", result.changed.count, result.missing.count, result.errored.count))
+            print(headline(t("site.summary", result.changed.count, result.missing.count, result.errored.count)))
         }
         // **置き忘れは見つけられないと、必ず言う。** URL に一覧が無いので、
         // 「サイトにあって git に無いもの」は原理的に出せない。
@@ -233,9 +283,9 @@ if !useClipboardFlag, files.count == 2 {
             for r in d.onlyLeft  { print(t("dir.only_a", r.path)) }
             for r in d.onlyRight { print(t("dir.only_b", r.path)) }
             if d.allIdentical {
-                print(t("dir.in_sync", d.identical.count))
+                print(headline(t("dir.in_sync", d.identical.count)))
             } else {
-                print(t("dir.summary", d.changed.count, d.onlyLeft.count, d.onlyRight.count))
+                print(headline(t("dir.summary", d.changed.count, d.onlyLeft.count, d.onlyRight.count)))
             }
         }
         exit(d.allIdentical ? 0 : (wantsExitCode ? 1 : 0))
@@ -290,6 +340,16 @@ func fileURL(for input: Input, data: Data, suffix: String) throws -> URL {
     return tmp
 }
 
+// **Terraform の state / plan は、秘密を伏せる専用の経路で比べる。**片方だけが Terraform だと、普通の
+// JSON の経路に落ちて、Terraform 側の秘密が平文で出てしまう。だから、混ざったら比べずに断る。
+// （普通の JSON 同士は、これまでどおり。キー名で伏せると普通の `password` という項目まで伏せてしまう。）
+let terraformA = parseTerraform(dataA), terraformB = parseTerraform(dataB)
+if terraformA != nil || terraformB != nil {
+    guard let ta = terraformA, let tb = terraformB, ta.kind == tb.kind else { die(t("error.terraform_mixed")) }
+} else if showSecrets {
+    die(t("error.show_secrets_flag"))
+}
+
 // `--text` は PDF のもの。ほかに渡されたら黙って飲まない（効かないつまみの線）。
 if wantsText && !(looksLikePDF(dataA) && looksLikePDF(dataB)) { die(t("error.text_flag")) }
 // `--offset` は画像のもの（PDF はページごとの紙なのでずらさない）。
@@ -299,6 +359,26 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
     // **効かないつまみを黙って飲まない。**--tolerance と --ignore-alpha は画素の話で、
     // 行には意味が無い。黙って無視すると「指定したのに効いていない」に気づけない。
     if tolerance > 0 || ignoreAlpha { die(t("error.image_only_flag")) }
+
+    if let ta = terraformA, let tb = terraformB {
+        let d = compareTerraform(ta, tb, showSecrets: showSecrets)
+        let name = d.kind == .state ? "state" : "plan"
+        if wantsJSON {
+            print(JSONOutput.encode(JSONOutput.terraform(d, redirects: redirectsJSON)))
+        } else if d.isIdentical {
+            print(headline(t("tf.\(name).identical")))
+            printRedirects()
+        } else {
+            let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
+            var out = Out(to: sink ?? stdout)
+            out.line(headline(t("tf.\(name).summary", d.changed, d.added, d.removed)))
+            for line in redirects { out.line("  " + line) }
+            renderTerraform(d, hiddenNote: !showSecrets, style: Style(on: useColor), into: &out)
+            out.flush()
+            Pager.finish()
+        }
+        exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+    }
 
     // **JSON／YAML として両方読めたら、構造で比べる。**「同じでもキーの並びが違う」
     // を差分に出さないための線（README が挙げていた穴）。どちらかが読めなければ
@@ -310,12 +390,12 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
         if wantsJSON {
             print(JSONOutput.encode(JSONOutput.structured(d, format: formatA, redirects: redirectsJSON)))
         } else if d.isIdentical {
-            print(t("structured.identical"))
+            print(headline(t("structured.identical")))
             printRedirects()
         } else {
             let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
             var out = Out(to: sink ?? stdout)
-            out.line(t("structured.summary", d.changed, d.added, d.removed))
+            out.line(headline(t("structured.summary", d.changed, d.added, d.removed)))
             for line in redirects { out.line("  " + line) }
             renderStructured(d, style: Style(on: useColor), into: &out)
             out.flush()
@@ -325,19 +405,30 @@ if detectKind(dataA) == .text && detectKind(dataB) == .text {
     }
 
     let d = compareText(TextSource(data: dataA), TextSource(data: dataB))
+    // **改行コードが違うなら、そう言う。**CRLF と LF は同じ扱いで diff には出ないので、黙っていると
+    // 「バイトは違うのに No differences」になる。CR だけの区切りは行に切らない、とも添える。
+    let eol = LineEnding.difference(dataA, dataB)
+    var eolNote: String? = nil
+    if let e = eol {
+        var s = t("note.line_endings", e.a.rawValue, e.b.rawValue)
+        if e.a == .cr || e.b == .cr { s += " " + t("note.line_endings.cr") }
+        eolNote = s
+    }
     if wantsJSON {
-        print(JSONOutput.encode(JSONOutput.text(d, redirects: redirectsJSON)))
+        print(JSONOutput.encode(JSONOutput.text(d, redirects: redirectsJSON, lineEndings: eol)))
     } else if d.isIdentical {
-        print(t("text.identical"))
+        print(headline(t("text.identical")))
         printRedirects()
+        if let eolNote { print("  " + eolNote) }
     } else {
         // **サマリも同じ口から出す。**print（libc のバッファ）と Out（fd へ直接）を
         // 混ぜると、順番が入れ替わる ―― 実際にサマリが本文の後ろへ回った。
         // 端末に出すときだけページャへ渡す。パイプならそのまま流す。
         let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
         var out = Out(to: sink ?? stdout)
-        out.line(t("text.summary", d.changed, d.added, d.removed))
+        out.line(headline(t("text.summary", d.changed, d.added, d.removed)))
         for line in redirects { out.line("  " + line) }
+        if let eolNote { out.line("  " + eolNote) }
         renderText(d, style: Style(on: useColor), into: &out)
         out.flush()
         Pager.finish()
@@ -370,12 +461,12 @@ if pdfA {
             o["kind"] = "pdf-text"
             print(JSONOutput.encode(o))
         } else if td.isIdentical {
-            print(t("pdf.text.identical", td.left.lines.count))
+            print(headline(t("pdf.text.identical", td.left.lines.count)))
             printRedirects()
         } else {
             let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
             var out = Out(to: sink ?? stdout)
-            out.line(t("pdf.text.summary", td.changed, td.added, td.removed))
+            out.line(headline(t("pdf.text.summary", td.changed, td.added, td.removed)))
             for line in redirects { out.line("  " + line) }
             renderText(td, style: Style(on: useColor), into: &out)
             out.flush()
@@ -393,7 +484,7 @@ if pdfA {
         exit(d.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
     }
     if d.isIdentical {
-        print(t("pdf.identical", d.pagesA))
+        print(headline(t("pdf.identical", d.pagesA)))
         printRedirects()
         if tolerance > 0 { print("  " + t("note.compared_with", t("note.tolerance", tolerance))) }
         exit(0)
@@ -403,9 +494,9 @@ if pdfA {
     if d.pagesA != d.pagesB { print(t("pdf.page_count", d.pagesA, d.pagesB)) }
     let differing = d.differingPages
     if differing.isEmpty {
-        print(t("pdf.common_same", common))
+        print(headline(t("pdf.common_same", common)))
     } else {
-        print(t("pdf.summary", differing.count, common))
+        print(headline(t("pdf.summary", differing.count, common)))
     }
     // 単位は mm。72 dpi で 1 px ≈ 0.35 mm なので、整数で言えば十分。
     let mm = { (v: Double) -> String in String(Int(v.rounded())) }
@@ -464,13 +555,13 @@ if zipA {
         if wantsJSON {
             print(JSONOutput.encode(JSONOutput.docx(d, otherPartsChanged: others, redirects: redirectsJSON)))
         } else if d.isIdentical {
-            print(t("docx.identical", d.left.lines.count))
+            print(headline(t("docx.identical", d.left.lines.count)))
             if others > 0 { print("  " + t("docx.others", others)) }
             printRedirects()
         } else {
             let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
             var out = Out(to: sink ?? stdout)
-            out.line(t("docx.summary", d.changed, d.added, d.removed))
+            out.line(headline(t("docx.summary", d.changed, d.added, d.removed)))
             if others > 0 { out.line("  " + t("docx.others", others)) }
             for line in redirects { out.line("  " + line) }
             renderText(d, style: Style(on: useColor), into: &out)
@@ -488,9 +579,9 @@ if zipA {
         for r in parts.onlyLeft  { print(t("dir.only_a", r.path)) }
         for r in parts.onlyRight { print(t("dir.only_b", r.path)) }
         if parts.allIdentical {
-            print(t("archive.in_sync", parts.identical.count))
+            print(headline(t("archive.in_sync", parts.identical.count)))
         } else {
-            print(t("archive.summary", parts.changed.count, parts.onlyLeft.count, parts.onlyRight.count))
+            print(headline(t("archive.summary", parts.changed.count, parts.onlyLeft.count, parts.onlyRight.count)))
         }
         printRedirects()
     }
@@ -510,12 +601,12 @@ if fontA {
         exit(r.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
     }
     if r.isIdentical {
-        print(t("font.identical", r.compared))
+        print(headline(t("font.identical", r.compared)))
     } else {
         if r.changed.isEmpty {
-            print(t("font.same_glyphs", r.compared))
+            print(headline(t("font.same_glyphs", r.compared)))
         } else {
-            print(t("font.differ", r.changed.count, r.compared))
+            print(headline(t("font.differ", r.changed.count, r.compared)))
             print("  " + t("font.first", describeCodepoint(r.changed[0])))
         }
         if !r.onlyA.isEmpty { print("  " + t("font.only_a", r.onlyA.count, describeCodepoint(r.onlyA[0]))) }
@@ -526,6 +617,54 @@ if fontA {
     printRedirects()
     print("  " + t("font.rendered", r.cell))
     exit(r.isIdentical ? 0 : (wantsExitCode ? 1 : 0))
+}
+
+// **SQLite は、スキーマ（テーブル・列・索引・ビュー・トリガ）を比べる。**行のデータは比べない（先にスキーマ
+// だけ。行は主キー・大きなテーブルで重い）。だから、スキーマが同じでバイトが違うときは、そう言う。
+// 読めなかった（暗号化・壊れている）ときは、これまでどおりバイナリとして比べ、そのことを言う。
+let sqliteA = looksLikeSQLite(dataA), sqliteB = looksLikeSQLite(dataB)
+if sqliteA != sqliteB { die(t("error.mixed_sqlite")) }
+if sqliteA {
+    if tolerance > 0 || ignoreAlpha { die(t("error.pixel_flag")) }
+    let ua = try? fileURL(for: inputs[0], data: dataA, suffix: "a.db")
+    let ub = try? fileURL(for: inputs[1], data: dataB, suffix: "b.db")
+    defer {
+        for (input, url) in zip(inputs, [ua, ub]) {
+            if case .file = input { continue }
+            if let url { try? FileManager.default.removeItem(at: url) }
+        }
+    }
+    do {
+        guard let ua, let ub else { throw SQLiteError.cannotOpen("temporary file") }
+        let d = compareSQLiteSchemas(try readSQLiteSchema(at: ua), try readSQLiteSchema(at: ub))
+        let bytesDiffer = dataA != dataB
+        let same = d.isIdentical && !bytesDiffer
+        if wantsJSON {
+            print(JSONOutput.encode(JSONOutput.sqlite(d, bytesDiffer: bytesDiffer)))
+        } else if same {
+            print(headline(t("sqlite.identical")))
+            printRedirects()
+        } else if d.isIdentical {
+            print(headline(t("sqlite.schema_same_bytes_differ")))
+            printRedirects()
+        } else {
+            let counts = (
+                d.tablesChanged.count + d.indexesChanged.count + d.viewsChanged.count + d.triggersChanged.count,
+                d.tablesAdded.count + d.indexesAdded.count + d.viewsAdded.count + d.triggersAdded.count,
+                d.tablesRemoved.count + d.indexesRemoved.count + d.viewsRemoved.count + d.triggersRemoved.count)
+            let sink = Pager.command(disabled: noPager).flatMap { Pager.start($0) }
+            var out = Out(to: sink ?? stdout)
+            out.line(headline(t("sqlite.summary", counts.0, counts.1, counts.2)))
+            for line in redirects { out.line("  " + line) }
+            renderSQLite(d, style: Style(on: useColor), into: &out)
+            out.flush()
+            Pager.finish()
+        }
+        exit(same ? 0 : (wantsExitCode ? 1 : 0))
+    } catch {
+        // 読めなかった。黙ってバイナリに落とさず、落としたと言う。
+        redirects.append(t("note.sqlite_unreadable", "\(error)"))
+    }
 }
 
 // テキストでないものは、**画像として読めるかどうか**でさらに分ける。拡張子は見ない。
@@ -540,7 +679,7 @@ if !imageA {
     if wantsJSON {
         print(JSONOutput.encode(JSONOutput.binary(d, redirects: redirectsJSON)))
     } else if d.isIdentical {
-        print(t("binary.identical"))
+        print(headline(t("binary.identical")))
         printRedirects()
     } else {
         // **長さの違いは、箇所の数と別に言う。** 1 バイト挿入で以降が全部ずれた結果を
@@ -618,23 +757,23 @@ if wantsJSON {
 
 switch result {
 case .identical:
-    print(t("images.identical"))
+    print(headline(t("images.identical")))
     printRedirects()
     if let offsetNote { print("  " + offsetNote) }
     if let note { print("  " + note) }
     exit(0)
 
 case .sizeMismatch(let sa, let sb):
-    print(t("images.size_mismatch", sa.width, sa.height, sb.width, sb.height))
+    print(headline(t("images.size_mismatch", sa.width, sa.height, sb.width, sb.height)))
     exit(wantsExitCode ? 1 : 0)
 
 case .differ(let d):
     // **数を先に言う。**割合は、丸めて消えないときだけ添える ――
     // 「0.0%」は「同じ」と読めてしまう（PixelDiff.displayPercent）。
     if let pct = d.displayPercent {
-        print(t("images.differ", d.changed, d.total, pct))
+        print(headline(t("images.differ", d.changed, d.total, pct)))
     } else {
-        print(t("images.differ.tiny", d.changed, d.total))
+        print(headline(t("images.differ.tiny", d.changed, d.total)))
     }
     print(t("images.first", d.first.x, d.first.y))
     printRedirects()
