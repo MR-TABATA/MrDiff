@@ -106,15 +106,19 @@ mrdiff --site https://example.com ./site   # 公開中のサイトは ./site と
 mrdiff local.conf host:/etc/app.conf       # ssh 越しのファイル 1 つ
 mrdiff --ssh ./site host:/var/www          # ssh 越しのツリー全体、両方向
 mrdiff old/ new/                      # フォルダ 2 つ ── どのファイルが違うか
+mrdiff a.tfstate b.tfstate            # Terraform の state / plan ── どの資源か（秘密は伏せる）
+mrdiff old.db new.db                  # SQLite ── どのテーブル・列・索引が変わったか（行は比べない）
 mrdiff v1.docx v2.docx                # Word ── どの段落が変わったか
 mrdiff a.xlsx b.xlsx                  # zip なら何でも ── 中のどのファイルが違うか
 mrdiff Font-1.otf Font-2.otf          # フォント ── どの字形が違うか
 
 mrdiff --help                         # オプションの一覧。1 つ 1 行
 mrdiff --help --lang=ja               # 同じものを日本語で
-mrdiff --version                      # mrdiff 0.7.1
+mrdiff --version                      # mrdiff 0.8.0
 mrdiff --exit-code a.png b.png        # 違えば 1 で終わる
 mrdiff -q a.png b.png                 # 何も出さず、違えば 1 で終わる（--exit-code を含む）
+mrdiff --oneline a.pdf b.pdf          # 要約の 1 行だけ
+mrdiff --completions zsh              # シェル補完のスクリプトを出す（bash / zsh / fish）
 mrdiff --json a.bin b.bin             # 機械向け
 
 mrdiff --tolerance=2 a.png b.jpg      # チャンネルごとに ±2 までは同じとみなす
@@ -382,6 +386,39 @@ only in B   chapter-07.md
 `mrdiff old/ch/chapter-02.pdf new/ch/chapter-02.pdf` を打てば、どのページかまで出る。
 何も除外しない ── `.DS_Store` も数える（`diff -r` と同じ）。
 
+### Terraform の state と plan
+
+```
+$ mrdiff a.tfstate b.tfstate
+Terraform state: 1 changed, 0 added, 0 removed
+ ~ aws_db_instance.main
+     instance_class: "db.t3.micro" → "db.t3.small"
+     password: (sensitive value changed)
+  1 sensitive value(s) hidden; --show-secrets shows them
+```
+
+生の `terraform.tfstate`、`terraform show -json` の state、plan を、1 つの大きな JSON としてではなく**資源の単位**で比べる。
+**秘密は伏せる** ── 秘密の値は「変わった」とだけ言い、`--show-secrets` を付けるまで値は出さない。
+秘密かどうかは、Terraform の印（`sensitive_attributes`・`*_sensitive`・sensitive な output）か、キー名で判定する。
+かたまりの中の秘密も伏せる。丸ごと足された・消えた資源は、属性を出さない。消える資源は、警告の 1 行で言う。
+
+この動きは、**両方が Terraform と判定できたときだけ**。普通の JSON は今までどおり JSON として比べ、
+片方だけが Terraform なら、比べずにそう言って断る。
+
+### SQLite
+
+```
+$ mrdiff old.db new.db
+SQLite schema: 1 changed, 0 added, 0 removed
+ ~ table users
+     + column email: TEXT
+  Row data was not compared (the schema only).
+```
+
+SQLite のファイル 2 つは、**スキーマ**（テーブル・列・索引・ビュー・トリガ）で比べ、行のデータは比べていないと答えの中で言う。
+読み取り専用で開く（`-wal` / `-shm` を作らない）。スキーマが同じでバイトが違うときは、終了コードは今までどおり
+「違う」のまま。SQLite として読めないときは、バイナリの比較に落ちて、そう言う。
+
 ### JSON
 
 `--json` は 1 行の JSON だけを出す。訳さない。形は v0.1.0 から固定
@@ -397,6 +434,8 @@ only in B   chapter-07.md
 | pdf | `pages_a`、`pages_b`、`dpi`、`text`（`{result, changed, added, removed, lines_a, lines_b}`。片方に文字が無ければ null）、両方にあるページの `pages: [{page, result, …}]`。違うページは `changed`、`total`、`fraction`、`max_gap`、`regions: [{top_mm, left_mm, width_mm, height_mm, count}]` を持つ。`size_mismatch` のページは `a` と `b` が `{width_mm, height_mm}`。一番上の `result` は、共通ページが全部同じでもページ数が違えば `differ` |
 | binary | `regions`、`differing_bytes`、`first: {offset}`（長さだけ違うなら null）、`size_a`、`size_b` |
 | site / tree / dir / archive | `in_sync`、`files`、状態ごとの数、`rows: [{path, status}]`。`dir` と `archive` は両側を `only_a` / `only_b` と呼ぶ（`tree` は `only_local` / `only_remote`） |
+| terraform-state / terraform-plan | `resources: [{address, type, status, changes: [{path, status, before, after}]}]`、`added` / `changed` / `removed` / `hidden_sensitive`、state は `destroyed`、plan は `planned_destroys`。秘密の変更は `"sensitive": true` で値を持たない |
+| sqlite-schema | `schema`（`identical` / `differ`）、`rows: "not-compared"`、`tables` / `indexes` / `views` / `triggers`（それぞれ `{added, removed, changed}`） |
 | pdf-text（`--text`） | `text` のキーを、抜いた文字の行で数えたもの |
 | docx | `text` のキーを段落で数えたもの ＋ `paragraphs_a`、`paragraphs_b`、`other_parts_changed`。本文以外だけ違うときも `result` は `differ` |
 | font | `name_a/b`、`version_a/b`（無ければ null）、`characters_a/b`、`compared`、`changed`、`changed_codepoints: [int]`、`only_a: [int]`、`only_b: [int]`（コードポイント、10 進）、`cell` |

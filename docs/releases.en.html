@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrDiff — Release history</title>
-  <meta name="description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.7.1.">
+  <meta name="description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.8.0.">
 
   <meta property="og:title" content="MrDiff — Release history">
-  <meta property="og:description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.7.1.">
+  <meta property="og:description" content="Every mrdiff release, dated and described — from v0.1.0 on 12 September 2026 to v0.8.0.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.en.html">
   <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
@@ -61,18 +61,22 @@
   <header class="rel-head">
     <div class="wrap">
       <div class="kicker">Release history</div>
-      <h1>Ten releases in four days.</h1>
-      <p class="lead">From the first release on 12 September 2026 to v0.7.1 three days later. It shipped comparing text, images and binaries; a day later it compared PDFs and told you where on the page, then two folders, then archives, Word documents and fonts, then the text of a PDF, then a shifted image, then JSON and YAML as data instead of lines, with the values alongside.</p>
+      <h1>Eleven releases.</h1>
+      <p class="lead">From the first release on 12 September 2026 to v0.7.1 three days later, and v0.8.0 on 8 October. It shipped comparing text, images and binaries; a day later it compared PDFs and told you where on the page, then two folders, then archives, Word documents and fonts, then the text of a PDF, then a shifted image, then JSON and YAML as data instead of lines, with the values alongside — and then standard input, Terraform and SQLite.</p>
     </div>
   </header>
 
   <div class="wrap">
     <section class="rel-era">
       <div class="rel-era-head">
-        <h2>Newest first</h2><span class="span">v0.7.1 ← v0.1.0 · 15 – 12 Sep 2026</span>
+        <h2>Newest first</h2><span class="span">v0.8.0 ← v0.1.0 · 8 Oct – 12 Sep 2026</span>
         <p>The CLI is free and MIT. Each release is a universal binary (Apple silicon + Intel) in a zip, and the Homebrew tap points at it.</p>
       </div>
 
+      <div class="rel-row m">
+        <span class="v">0.8.0</span><span class="d">8 Oct</span>
+        <span class="t"><strong>Pipes, and two more things to compare.</strong> <code>-</code> reads standard input — <code>cat a.txt | mrdiff - b.txt</code>, images and PDFs too — and says why when both sides are <code>-</code> or nothing is piped. <code>--quiet</code> prints nothing and answers with the exit code, <code>--oneline</code> keeps only the summary line, <code>--relative</code> shows paths relative to the current directory, and <code>mrdiff --completions bash|zsh|fish</code> prints a completion script. <strong>Terraform state and plan files</strong> are compared resource by resource, and secret values are hidden — “(sensitive value changed)” — unless you pass <code>--show-secrets</code>; this only happens when the files are recognised as Terraform, and ordinary JSON is compared as before. <strong>SQLite databases</strong> are compared by schema — tables, columns, indexes, views, triggers — not by rows, and are opened read-only. When CRLF and LF are treated as the same, the output now says it relaxed the comparison (<code>line_endings</code> in <code>--json</code>).</span>
+      </div>
       <div class="rel-row">
         <span class="v">0.7.1</span><span class="d">15 Sep</span>
         <span class="t">JSON/YAML diffs now carry the value, not just the path — <code>~ version: "1.0" → "1.1"</code> instead of a bare <code>~ version</code>. A one-line list of paths turned out not to be enough on its own to tell what changed. <code>--json</code>'s <code>paths</code> gains <code>before</code> / <code>after</code> (unabridged; the human output's <code>…</code> truncation is display-only)</span>

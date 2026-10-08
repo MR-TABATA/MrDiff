@@ -108,15 +108,19 @@ mrdiff --site https://example.com ./site   # is the live site in sync with ./sit
 mrdiff local.conf host:/etc/app.conf       # one remote file over ssh
 mrdiff --ssh ./site host:/var/www          # a whole tree over ssh, both ways
 mrdiff old/ new/                      # two folders — which files differ
+mrdiff a.tfstate b.tfstate            # Terraform state / plan — which resources, secrets hidden
+mrdiff old.db new.db                  # SQLite — which tables, columns, indexes changed (not the rows)
 mrdiff v1.docx v2.docx                # Word — which paragraphs changed
 mrdiff a.xlsx b.xlsx                  # any zip — which files inside changed
 mrdiff Font-1.otf Font-2.otf          # fonts — which glyphs render differently
 
 mrdiff --help                         # every option, one line each
 mrdiff --help --lang=ja               # the same in Japanese
-mrdiff --version                      # mrdiff 0.7.1
+mrdiff --version                      # mrdiff 0.8.0
 mrdiff --exit-code a.png b.png        # exit 1 if they differ
 mrdiff -q a.png b.png                 # print nothing; exit 1 if they differ (implies --exit-code)
+mrdiff --oneline a.pdf b.pdf          # only the one-line summary
+mrdiff --completions zsh              # print a shell completion script (bash, zsh or fish)
 mrdiff --json a.bin b.bin             # machine readable
 
 mrdiff --tolerance=2 a.png b.jpg      # ±2 per channel counts as the same
@@ -409,6 +413,43 @@ for a server, for the folder next door. It stops at the file level on purpose:
 `mrdiff old/ch/chapter-02.pdf new/ch/chapter-02.pdf` tells you which page.
 Nothing is filtered — `.DS_Store` counts, as it does for `diff -r`.
 
+### Terraform state and plan
+
+```
+$ mrdiff a.tfstate b.tfstate
+Terraform state: 1 changed, 0 added, 0 removed
+ ~ aws_db_instance.main
+     instance_class: "db.t3.micro" → "db.t3.small"
+     password: (sensitive value changed)
+  1 sensitive value(s) hidden; --show-secrets shows them
+```
+
+A raw `terraform.tfstate`, the state in `terraform show -json`, and a plan are compared resource
+by resource instead of as one big JSON. **Secrets are hidden** — a sensitive value is reported as
+changed, never shown — until you pass `--show-secrets`. A value counts as sensitive when Terraform
+marked it (`sensitive_attributes`, `*_sensitive`, a sensitive output) or its key name says so, and a
+secret inside a nested block is hidden too; a resource that was added or removed whole shows no
+attributes. A resource that disappears is called out in one warning line.
+
+This only happens when both files are recognised as Terraform. Ordinary JSON is compared as JSON,
+exactly as before, and if only one side is Terraform it says so instead of comparing.
+
+### SQLite databases
+
+```
+$ mrdiff old.db new.db
+SQLite schema: 1 changed, 0 added, 0 removed
+ ~ table users
+     + column email: TEXT
+  Row data was not compared (the schema only).
+```
+
+Two SQLite files are compared by their **schema** — tables, columns, indexes, views, triggers —
+and the answer says outright that rows were not compared. They are opened read-only (no `-wal` or
+`-shm` file is created). If the schema is identical but the bytes differ, the exit code stays
+"differ" as it always was; a file that cannot be read as SQLite falls back to a binary comparison
+and says so.
+
 ### JSON
 
 `--json` prints one line of JSON and nothing else. It is never translated,
@@ -424,6 +465,8 @@ and its shape is fixed from v0.1.0 on (`pdf` added in v0.2.0, `dir` in v0.3.0, `
 | pdf | `pages_a`, `pages_b`, `dpi`, `text` (`{result, changed, added, removed, lines_a, lines_b}`, or null when a side has no text), and `pages: [{page, result, …}]` for the pages both have — a differing page carries `changed`, `total`, `fraction`, `max_gap` and `regions: [{top_mm, left_mm, width_mm, height_mm, count}]`; a `size_mismatch` page carries `a` and `b` as `{width_mm, height_mm}`. `result` at the top is `differ` whenever the page counts differ, even if every shared page is identical |
 | binary | `regions`, `differing_bytes`, `first: {offset}` (null when only the lengths differ), `size_a`, `size_b` |
 | site / tree / dir / archive | `in_sync`, `files`, per-status counts, and `rows: [{path, status}]`. `dir` and `archive` name their sides `only_a` / `only_b` where `tree` says `only_local` / `only_remote` |
+| terraform-state / terraform-plan | `resources: [{address, type, status, changes: [{path, status, before, after}]}]`, `added`, `changed`, `removed`, `hidden_sensitive`, and `destroyed` (a state) or `planned_destroys` (a plan) — a sensitive change has `"sensitive": true` and no values |
+| sqlite-schema | `schema` (`identical` / `differ`), `rows: "not-compared"`, and `tables`, `indexes`, `views`, `triggers`, each `{added, removed, changed}` |
 | pdf-text (`--text`) | the `text` keys, counted in lines of extracted text |
 | docx | the `text` keys counted in paragraphs, plus `paragraphs_a`, `paragraphs_b`, `other_parts_changed` — `result` is `differ` when only the other parts differ |
 | font | `name_a/b`, `version_a/b` (null when the font has none), `characters_a/b`, `compared`, `changed`, `changed_codepoints: [int]`, `only_a: [int]`, `only_b: [int]` (codepoints, decimal), `cell` |
@@ -438,6 +481,10 @@ Exit codes: `0` it ran (differ or not), `1` they differ and `--exit-code` was
 given, `2` it could not run (the reason goes to stderr; nothing goes to stdout).
 `--quiet` / `-q` prints nothing at all and answers only with the exit code (`0` same, `1`
 differ); it implies `--exit-code`, cannot be combined with `--json`, and errors still go to stderr.
+`--oneline` keeps only the summary line (errors still go to stderr), and `--relative` shows the
+paths in error messages relative to the current directory. `mrdiff --completions bash|zsh|fish`
+prints a completion script, e.g. `mrdiff --completions zsh > ~/.zfunc/_mrdiff`; `--help` and the
+completions read the same table, so they never disagree.
 
 ### In CI
 

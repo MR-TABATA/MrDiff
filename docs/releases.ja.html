@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MrDiff — リリース履歴</title>
-  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.7.1 まで。">
+  <meta name="description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.8.0 まで。">
 
   <meta property="og:title" content="MrDiff — リリース履歴">
-  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.7.1 まで。">
+  <meta property="og:description" content="mrdiff の全リリースを日付つきで。2026 年 9 月 12 日の v0.1.0 から v0.8.0 まで。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mr-tabata.github.io/MrDiff/releases.ja.html">
   <meta property="og:image" content="https://mr-tabata.github.io/MrDiff/media/og-image.png">
@@ -61,18 +61,22 @@
   <header class="rel-head">
     <div class="wrap">
       <div class="kicker">リリース履歴</div>
-      <h1>4 日で 10 のリリース。</h1>
-      <p class="lead">2026 年 9 月 12 日の最初のリリースから、3 日後の v0.7.1 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つ、アーカイブ、Word 文書、フォント、PDF の文字、ずらした画像、JSON と YAML を行ではなくデータとして比べるようになり、最後にその値も添えるようになった。</p>
+      <h1>11 のリリース。</h1>
+      <p class="lead">2026 年 9 月 12 日の最初のリリースから、3 日後の v0.7.1、そして 10 月 8 日の v0.8.0 まで。テキスト・画像・バイナリを比べる形で出て、その翌日には PDF を比べてページのどこかを言い、フォルダ 2 つ、アーカイブ、Word 文書、フォント、PDF の文字、ずらした画像、JSON と YAML を行ではなくデータとして比べるようになり、その値も添えるようになり、そして標準入力、Terraform、SQLite を比べるようになった。</p>
     </div>
   </header>
 
   <div class="wrap">
     <section class="rel-era">
       <div class="rel-era-head">
-        <h2>新しい順</h2><span class="span">v0.7.1 ← v0.1.0 · 2026 年 9 月 15 – 12 日</span>
+        <h2>新しい順</h2><span class="span">v0.8.0 ← v0.1.0 · 2026 年 10 月 8 日 – 9 月 12 日</span>
         <p>CLI は無料で MIT。各リリースは universal binary（Apple silicon + Intel）の zip で、Homebrew の tap はそれを指す。</p>
       </div>
 
+      <div class="rel-row m">
+        <span class="v">0.8.0</span><span class="d">10/8</span>
+        <span class="t"><strong>パイプで渡せる。比べられるものが 2 つ増えた。</strong> <code>-</code> で標準入力を読む ── <code>cat a.txt | mrdiff - b.txt</code>、画像も PDF もパイプで比べられる。両側が <code>-</code> のときと、何も流していないときは、理由を言って断る。<code>--quiet</code> は何も出さず終了コードだけで答え、<code>--oneline</code> は要約の 1 行だけにし、<code>--relative</code> はパスをカレントディレクトリからの相対にし、<code>mrdiff --completions bash|zsh|fish</code> で補完のスクリプトを出す。<strong>Terraform の state / plan</strong> は資源の単位で比べ、秘密の値は「(sensitive value changed)」とだけ言う（<code>--show-secrets</code> で出す）。Terraform と判定できたときだけの動きで、普通の JSON は今までどおり。<strong>SQLite</strong> は行ではなくスキーマ（テーブル・列・索引・ビュー・トリガ）を比べ、読み取り専用で開く。CRLF と LF を同じ扱いにしたときは、「緩めて比べた」と添えるようになった（<code>--json</code> では <code>line_endings</code>）。</span>
+      </div>
       <div class="rel-row">
         <span class="v">0.7.1</span><span class="d">9/15</span>
         <span class="t">JSON/YAML の差分が、パスだけでなく値も持つように ── <code>~ version</code> だけだったところが <code>~ version: "1.0" → "1.1"</code> に。パスの一覧だけでは何が変わったか分からないと分かった。<code>--json</code> の <code>paths</code> に <code>before</code> / <code>after</code> が増えた（切らずに出す。人向けの出力の <code>…</code> は表示だけの話）</span>
