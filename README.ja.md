@@ -64,7 +64,7 @@ MrDiff はそれに取って代わろうとしない。MrDiff が足すのは、
 
 ## Macアプリで見たいとき
 
-[MrkDiff Hex](https://mr-tabata.github.io/MrDiff/MrkDiffHex.ja.html) は、バイナリとテキストの違いを左右に並べて表示します。同じアプリの全機能を14日間無料で試せます。カード登録は不要です。
+[MrkDiff Hex](https://mrktools.app/ja/diff/) は、バイナリとテキストの違いを左右に並べて表示します。同じアプリの全機能を14日間無料で試せます。カード登録は不要です。
 
 ## インストール
 
@@ -82,7 +82,7 @@ mrdiff --version                      # 確認
 `brew update` で tap を読み直さないと、Homebrew が新しい版に気づかず
 `brew upgrade` が「もう入っている」と言うことがある。何が変わったかは
 [Releases](https://github.com/MR-TABATA/MrDiff/releases) と
-[リリース履歴](https://mr-tabata.github.io/MrDiff/releases.ja.html)に。
+[リリース履歴](https://mrktools.app/ja/diff/release/)に。
 
 macOS 専用。画像の読み込みに OS の ImageIO を使っていて、それが
 プラットフォームに縛られる理由。出力は既定で英語。`MRDIFF_LANG=ja`（1 回だけなら

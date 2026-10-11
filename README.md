@@ -65,7 +65,7 @@ a different output for each.
 
 ## Prefer a Mac app?
 
-[MrkDiff Hex](https://mr-tabata.github.io/MrDiff/MrkDiffHex.en.html) shows binary and text differences side by side. The same app includes every feature during a 14-day free trial; no credit card is required.
+[MrkDiff Hex](https://mrktools.app/en/diff/) shows binary and text differences side by side. The same app includes every feature during a 14-day free trial; no credit card is required.
 
 ## Install
 
@@ -83,7 +83,7 @@ mrdiff --version                      # confirm
 `brew update` refreshes the tap so Homebrew sees the new version; without it,
 `brew upgrade` can report "already installed". Release notes are on the
 [Releases page](https://github.com/MR-TABATA/MrDiff/releases) and the
-[release history](https://mr-tabata.github.io/MrDiff/releases.en.html).
+[release history](https://mrktools.app/en/diff/release/).
 
 macOS only. Image decoding uses the system's ImageIO, which is what ties it to
 the platform. Output is English by default; `MRDIFF_LANG=ja` (or `--lang=ja`

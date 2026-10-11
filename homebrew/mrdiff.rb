@@ -9,7 +9,7 @@
 # 数秒で入り、Xcode も要らず、ダウンロード数が Release のアセットに乗る。
 class Mrdiff < Formula
   desc "Do they differ, and where — images, PDFs, Word, fonts, archives, folders, URLs, sites, SSH, and text"
-  homepage "https://mr-tabata.github.io/MrDiff/"
+  homepage "https://mrktools.app/en/diff/"
   url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.8.0/mrdiff-0.8.0-macos.zip"
   sha256 "9195a021cbb6f2b91922f53984923b4b0702c1f4f348688c2b03a26995aa110c"
   version "0.8.0"
