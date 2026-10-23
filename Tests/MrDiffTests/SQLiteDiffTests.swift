@@ -164,4 +164,31 @@ final class SQLiteDiffTests: XCTestCase {
         XCTAssertEqual(d.tablesChanged.map(\.table), ["t"])
         XCTAssertTrue(d.tablesChanged[0].definitionChanged)
     }
+
+    /// 列名が CHECK や UNIQUE、GENERATED 等のキーワードで始まっていても、制約定義と誤判定されないこと。
+    func testColumnNamesStartingWithKeywordsDoNotTriggerFalseDefinitionChanged() throws {
+        let d = try diff("CREATE TABLE t(check_date TEXT, unique_id TEXT, generated_at TEXT);",
+                         "CREATE TABLE t(check_date VARCHAR(50), unique_id TEXT, generated_at TEXT);")
+        XCTAssertFalse(d.isIdentical)
+        XCTAssertEqual(d.tablesChanged.map(\.table), ["t"])
+        XCTAssertEqual(d.tablesChanged[0].columns.count, 1)
+        XCTAssertEqual(d.tablesChanged[0].columns[0].column, "check_date")
+        XCTAssertFalse(d.tablesChanged[0].definitionChanged, "列の型変更のみであり、定義変更フラグは立たないこと")
+    }
+
+    /// DEFAULT 値の文字列リテラル内にカンマが含まれていても、誤って分割されずに正しく比較されること。
+    func testDefaultValueContainingCommaDoesNotCorruptDefinitionParsing() throws {
+        let d = try diff("CREATE TABLE t(id INTEGER PRIMARY KEY, note TEXT DEFAULT 'a,b,c');",
+                         "CREATE TABLE t(id INTEGER PRIMARY KEY, note TEXT DEFAULT 'a,b,c');")
+        XCTAssertTrue(d.isIdentical)
+    }
+
+    /// インライン制約が別の列に移動した場合（制約シグネチャ自体は同じ）、定義変更として検知されること。
+    func testInlineConstraintMovingToAnotherColumnIsReported() throws {
+        let d = try diff("CREATE TABLE p(id INTEGER PRIMARY KEY); CREATE TABLE t(a INTEGER REFERENCES p(id), b INTEGER);",
+                         "CREATE TABLE p(id INTEGER PRIMARY KEY); CREATE TABLE t(a TEXT, b INTEGER REFERENCES p(id));")
+        XCTAssertFalse(d.isIdentical)
+        XCTAssertEqual(d.tablesChanged.map(\.table), ["t"])
+        XCTAssertTrue(d.tablesChanged[0].definitionChanged, "外部キー参照が a から b に移ったことが定義変更として報告されること")
+    }
 }

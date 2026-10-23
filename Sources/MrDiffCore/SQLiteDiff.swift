@@ -176,10 +176,18 @@ func tableDefinitionDiffers(a: SQLiteTable, b: SQLiteTable) -> Bool {
         var parts: [String] = []
         var current = ""
         var depth = 0
+        var inSingleQuote = false
         for ch in body {
-            if ch == "(" { depth += 1; current.append(ch) }
-            else if ch == ")" { depth -= 1; current.append(ch) }
-            else if ch == "," && depth == 0 {
+            if ch == "'" {
+                inSingleQuote.toggle()
+                current.append(ch)
+            } else if !inSingleQuote && ch == "(" {
+                depth += 1
+                current.append(ch)
+            } else if !inSingleQuote && ch == ")" {
+                depth -= 1
+                current.append(ch)
+            } else if !inSingleQuote && ch == "," && depth == 0 {
                 let trimmed = current.trimmingCharacters(in: .whitespaces)
                 if !trimmed.isEmpty { parts.append(trimmed) }
                 current = ""
@@ -190,21 +198,25 @@ func tableDefinitionDiffers(a: SQLiteTable, b: SQLiteTable) -> Bool {
         let last = current.trimmingCharacters(in: .whitespaces)
         if !last.isEmpty { parts.append(last) }
 
+        func isKeyword(_ s: String, _ kw: String) -> Bool {
+            s == kw || s.hasPrefix(kw + " ") || s.hasPrefix(kw + "(") || s.hasPrefix(kw + "\t") || s.hasPrefix(kw + "\n")
+        }
+
         var constraints: [String] = []
         if !suffix.isEmpty { constraints.append(suffix) }
         for part in parts {
             let upper = part.uppercased()
             if upper.hasPrefix("CONSTRAINT ") || upper.hasPrefix("PRIMARY KEY") ||
-               upper.hasPrefix("FOREIGN KEY") || upper.hasPrefix("CHECK") || upper.hasPrefix("UNIQUE") {
+               upper.hasPrefix("FOREIGN KEY") || isKeyword(upper, "CHECK") || isKeyword(upper, "UNIQUE") {
                 constraints.append(part)
-            } else if upper.contains("REFERENCES ") || upper.contains("CHECK(") || upper.contains("CHECK (") ||
+            } else if upper.contains("REFERENCES ") || upper.contains("CHECK(") || upper.contains("CHECK ") ||
                       upper.contains("COLLATE ") || upper.contains("UNIQUE") || upper.contains("GENERATED") {
                 let tokens = part.split(separator: " ").map(String.init)
-                for (i, tok) in tokens.enumerated() {
+                for (i, tok) in tokens.enumerated() where i > 0 {
                     let tUpper = tok.uppercased()
-                    if tUpper == "REFERENCES" || tUpper.hasPrefix("CHECK") || tUpper == "COLLATE" ||
-                       tUpper == "UNIQUE" || tUpper.hasPrefix("GENERATED") {
-                        constraints.append(tokens[i...].joined(separator: " "))
+                    if tUpper == "REFERENCES" || tUpper == "CHECK" || tUpper.hasPrefix("CHECK(") ||
+                       tUpper == "COLLATE" || tUpper == "UNIQUE" || tUpper == "GENERATED" {
+                        constraints.append(tokens[0] + " " + tokens[i...].joined(separator: " "))
                         break
                     }
                 }

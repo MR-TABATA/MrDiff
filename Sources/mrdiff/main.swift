@@ -11,7 +11,9 @@ import MrDiffCore
 // 受け取り、そこで静かにやめる（Out.flush）。
 signal(SIGPIPE, SIG_IGN)
 
-let args = Array(CommandLine.arguments.dropFirst())
+let rawArgs = Array(CommandLine.arguments.dropFirst())
+// `--` より前の引数だけをスイッチ・フラグとして扱う（`--` 以降はハイフンで始まる名前も含めファイル名）。
+let args = Array(rawArgs.prefix(while: { $0 != "--" }))
 
 // `--version` は何より先に。訳さない（機械が読むことがある）。
 if args.contains("--version") || args.contains("-V") {
@@ -63,7 +65,7 @@ let wantsText = args.contains("--text")
 // Terraform の state / plan を比べるときだけ、秘密の値を出す（既定は伏せる）。
 let showSecrets = args.contains("--show-secrets")
 // `-` は標準入力、`--` 以降はすべてファイルとして扱う（ハイフン付きファイル名を通せるようにする）。
-let files = CLIOptions.parseFiles(from: args)
+let files = CLIOptions.parseFiles(from: rawArgs)
 
 func die(_ message: String) -> Never {
     FileHandle.standardError.write(Data(("mrdiff: " + message + "\n").utf8))
@@ -665,7 +667,7 @@ if sqliteA {
         // 読めなかった。黙ってバイナリに落とさず、落としたと言う（JSON にも伝える）。
         let msg = t("note.sqlite_unreadable", "\(error)")
         redirects.append(msg)
-        redirectsJSON.append(.init(from: "sqlite", to: msg))
+        redirectsJSON.append(.init(from: "sqlite", to: "binary"))
     }
 }
 if let code = sqliteExitCode { exit(code) }
