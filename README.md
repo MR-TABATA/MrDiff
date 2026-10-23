@@ -507,6 +507,19 @@ MrDiff asks one question of all of them — do these differ, and where — and
 answers it in one shape. When that answer is not enough and you actually need to
 *see* the difference, that is a different tool's job.
 
+## Design Principles & Architecture
+
+MrDiff is architected from the ground up not merely as a text diff, but as an advanced comparison engine that automatically detects content type and measures differences at the exact granularity that matters most for each format.
+
+1. **Pure functions with zero side effects**
+   The core comparison algorithms are pure functions completely decoupled from I/O and display. Taking pixel buffers, byte slices, or line arrays and returning immutable result structs, they guarantee zero memory leaks and deterministic reproducibility even across 10-million-line streams.
+2. **Multi-layered secret masking for Terraform**
+   When comparing Terraform state and plan files, MrDiff doesn't rely solely on `sensitive` attributes. It combines attribute inspection with keyword heuristics (`password`, `token`, `secret`, `private_key`), preventing accidental plaintext secret leaks in both human and JSON outputs.
+3. **Human-centric UX: Never rounding to 0.0%**
+   When a single pixel differs in a massive image (<0.05%), rounding to "0.0%" misleads humans into believing the files match. MrDiff suppresses deceptive percentages and reports exact pixel counts (`changed / total`) to prevent critical oversights.
+4. **Faithful to the Unix philosophy**
+   Engineered for bulletproof automation and CI pipelines. Safe `SIGPIPE` handling when piped to pagers, robust file descriptor redirection (`dup2`), and clean pipeline exit codes (`--exit-code`) ensure it never hangs or flakes in scripts.
+
 ## Speed
 
 **Reading is the cost.** To say that two files are identical, both have to be
