@@ -91,7 +91,12 @@ if files.filter({ $0 == "-" }).count > 1 { die(t("error.stdin_twice")) }
 // 出力を分岐させるより、出口を 1 か所で塞ぐほうが、あとから経路が増えても漏れない。
 if quiet {
     let devNull = open("/dev/null", O_WRONLY)
-    if devNull >= 0 { dup2(devNull, STDOUT_FILENO); close(devNull) }
+    if devNull >= 0 {
+        dup2(devNull, STDOUT_FILENO)
+        close(devNull)
+    } else {
+        die("failed to silence stdout (/dev/null unavailable)")
+    }
 }
 
 // `--relative`: エラーに出るファイルのパスを、カレントディレクトリからの相対パスにする（既定は絶対パス）。
@@ -115,9 +120,9 @@ func finishOneline() {
     guard oneline, let capture = onelineCapture, onelineRealStdout >= 0 else { return }
     fflush(stdout)
     rewind(capture)
-    var bytes = [UInt8](), buf = [UInt8](repeating: 0, count: 4096)
-    while case let n = fread(&buf, 1, buf.count, capture), n > 0 { bytes += buf[0..<n] }
-    let text = String(decoding: bytes, as: UTF8.self)
+    var data = Data(), buf = [UInt8](repeating: 0, count: 4096)
+    while case let n = fread(&buf, 1, buf.count, capture), n > 0 { data.append(buf, count: n) }
+    let text = String(decoding: data, as: UTF8.self)
     let first = text.split(whereSeparator: \.isNewline).first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     let line = onelineHeadline ?? first.map(String.init) ?? ""
     if !line.isEmpty { let out = Array((line + "\n").utf8); _ = write(onelineRealStdout, out, out.count) }
