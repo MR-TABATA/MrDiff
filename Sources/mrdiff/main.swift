@@ -62,8 +62,8 @@ let useClipboardFlag = args.contains("--clipboard")
 let wantsText = args.contains("--text")
 // Terraform の state / plan を比べるときだけ、秘密の値を出す（既定は伏せる）。
 let showSecrets = args.contains("--show-secrets")
-// `-` だけは標準入力を指す引数なので、つまみとして落とさない。
-let files = args.filter { !$0.hasPrefix("-") || $0 == "-" }
+// `-` は標準入力、`--` 以降はすべてファイルとして扱う（ハイフン付きファイル名を通せるようにする）。
+let files = CLIOptions.parseFiles(from: args)
 
 func die(_ message: String) -> Never {
     FileHandle.standardError.write(Data(("mrdiff: " + message + "\n").utf8))
@@ -624,23 +624,23 @@ if fontA {
 // 読めなかった（暗号化・壊れている）ときは、これまでどおりバイナリとして比べ、そのことを言う。
 let sqliteA = looksLikeSQLite(dataA), sqliteB = looksLikeSQLite(dataB)
 if sqliteA != sqliteB { die(t("error.mixed_sqlite")) }
+var sqliteExitCode: Int32? = nil
 if sqliteA {
     if tolerance > 0 || ignoreAlpha { die(t("error.pixel_flag")) }
-    let ua = try? fileURL(for: inputs[0], data: dataA, suffix: "a.db")
-    let ub = try? fileURL(for: inputs[1], data: dataB, suffix: "b.db")
-    defer {
-        for (input, url) in zip(inputs, [ua, ub]) {
-            if case .file = input { continue }
-            if let url { try? FileManager.default.removeItem(at: url) }
-        }
-    }
     do {
-        guard let ua, let ub else { throw SQLiteError.cannotOpen("temporary file") }
+        let ua = try fileURL(for: inputs[0], data: dataA, suffix: "a.db")
+        let ub = try fileURL(for: inputs[1], data: dataB, suffix: "b.db")
+        defer {
+            for (input, url) in zip(inputs, [ua, ub]) {
+                if case .file = input { continue }
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
         let d = compareSQLiteSchemas(try readSQLiteSchema(at: ua), try readSQLiteSchema(at: ub))
         let bytesDiffer = dataA != dataB
         let same = d.isIdentical && !bytesDiffer
         if wantsJSON {
-            print(JSONOutput.encode(JSONOutput.sqlite(d, bytesDiffer: bytesDiffer)))
+            print(JSONOutput.encode(JSONOutput.sqlite(d, bytesDiffer: bytesDiffer, redirects: redirectsJSON)))
         } else if same {
             print(headline(t("sqlite.identical")))
             printRedirects()
@@ -660,12 +660,15 @@ if sqliteA {
             out.flush()
             Pager.finish()
         }
-        exit(same ? 0 : (wantsExitCode ? 1 : 0))
+        sqliteExitCode = same ? 0 : (wantsExitCode ? 1 : 0)
     } catch {
-        // 読めなかった。黙ってバイナリに落とさず、落としたと言う。
-        redirects.append(t("note.sqlite_unreadable", "\(error)"))
+        // 読めなかった。黙ってバイナリに落とさず、落としたと言う（JSON にも伝える）。
+        let msg = t("note.sqlite_unreadable", "\(error)")
+        redirects.append(msg)
+        redirectsJSON.append(.init(from: "sqlite", to: msg))
     }
 }
+if let code = sqliteExitCode { exit(code) }
 
 // テキストでないものは、**画像として読めるかどうか**でさらに分ける。拡張子は見ない。
 // 片方だけ画像なら比べない（画素と生バイトも突き合わせられない）。

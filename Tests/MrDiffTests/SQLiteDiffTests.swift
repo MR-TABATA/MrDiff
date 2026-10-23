@@ -133,4 +133,35 @@ final class SQLiteDiffTests: XCTestCase {
         XCTAssertEqual(bytes["schema"] as? String, "identical")
         XCTAssertEqual(bytes["rows"] as? String, "not-compared")
     }
+
+    /// 列の変更（型変更・追加）と同時に外部キー制約が変わった場合でも、定義変更が正しく報告されること。
+    func testConstraintChangeReportedEvenWhenColumnsChange() throws {
+        let d = try diff("CREATE TABLE p(id INTEGER PRIMARY KEY); CREATE TABLE c(id INTEGER, p INTEGER REFERENCES p(id));",
+                         "CREATE TABLE p(id INTEGER PRIMARY KEY); CREATE TABLE c(id INTEGER, p VARCHAR(50));")
+        XCTAssertEqual(d.tablesChanged.map(\.table), ["c"])
+        XCTAssertFalse(d.tablesChanged[0].columns.isEmpty)
+        XCTAssertTrue(d.tablesChanged[0].definitionChanged, "列の型変更があっても外部キー削除の定義変更が拾われること")
+    }
+
+    func testJSONIncludesRedirects() throws {
+        let d = try diff("CREATE TABLE t(id INTEGER);", "CREATE TABLE t(id INTEGER);")
+        let res = JSONOutput.sqlite(d, bytesDiffer: false, redirects: [.init(from: "http://a", to: "http://b")])
+        XCTAssertNotNil(res["redirected"])
+    }
+
+    /// 列の並び順が変わった場合、列自体の増減・変更がなくても定義変更（definitionChanged）として検出されること。
+    func testColumnReorderingIsReportedAsDefinitionChanged() throws {
+        let d = try diff("CREATE TABLE t(a INTEGER, b TEXT);", "CREATE TABLE t(b TEXT, a INTEGER);")
+        XCTAssertFalse(d.isIdentical)
+        XCTAssertEqual(d.tablesChanged.map(\.table), ["t"])
+        XCTAssertTrue(d.tablesChanged[0].definitionChanged)
+    }
+
+    /// インラインの UNIQUE 制約が変更された場合でも、列の型変更と合わせて定義変更が報告されること。
+    func testInlineUniqueConstraintChangeIsReported() throws {
+        let d = try diff("CREATE TABLE t(p INTEGER UNIQUE);", "CREATE TABLE t(p TEXT);")
+        XCTAssertFalse(d.isIdentical)
+        XCTAssertEqual(d.tablesChanged.map(\.table), ["t"])
+        XCTAssertTrue(d.tablesChanged[0].definitionChanged)
+    }
 }

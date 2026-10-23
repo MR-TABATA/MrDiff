@@ -85,6 +85,7 @@ final class CLIOptionsTests: XCTestCase {
         t mrdiff --color=al
         t mrdiff --color = a
         t mrdiff --completions ""
+        t mrdiff --completions=
         t mrdiff --lang = j
         t mrdiff no
         """
@@ -104,6 +105,7 @@ final class CLIOptionsTests: XCTestCase {
             "mrdiff --color=al|--color=always",
             "mrdiff --color = a|auto always",
             "mrdiff --completions |bash zsh fish",
+            "mrdiff --completions=|--completions=bash --completions=zsh --completions=fish",
             "mrdiff --lang = j|ja",
             "mrdiff no|notes.txt",
         ])
@@ -126,5 +128,12 @@ final class CLIOptionsTests: XCTestCase {
     func testDefaultIsStillTheFullPath() {
         PathDisplay.relativeToCurrentDirectory = false
         XCTAssertEqual(PathDisplay.text(URL(fileURLWithPath: "/tmp/x.png")), "/tmp/x.png")
+    }
+
+    /// `--` の後はハイフン付きのファイル名もつまみと解釈されずに位置引数として扱われること。
+    func testDoubleDashAllowsHyphenatedFileNames() {
+        XCTAssertEqual(CLIOptions.parseFiles(from: ["--exit-code", "--", "-a.txt", "-b.txt"]), ["-a.txt", "-b.txt"])
+        XCTAssertEqual(CLIOptions.parseFiles(from: ["--oneline", "a.txt", "b.txt"]), ["a.txt", "b.txt"])
+        XCTAssertEqual(CLIOptions.parseFiles(from: ["-", "b.txt"]), ["-", "b.txt"])
     }
 }

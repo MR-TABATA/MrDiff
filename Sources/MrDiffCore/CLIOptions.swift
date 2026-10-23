@@ -30,12 +30,30 @@ public enum CLIOptions {
         .init(usage: "--clipboard", helpKey: "help.clipboard", words: ["--clipboard"], values: []),
         .init(usage: "--site <https://base> <dir>", helpKey: "help.site", words: ["--site"], values: []),
         .init(usage: "--ssh <dir> <host:path>", helpKey: "help.ssh", words: ["--ssh"], values: []),
-        .init(usage: "--completions bash|zsh|fish", helpKey: "help.completions", words: ["--completions"],
+        .init(usage: "--completions bash|zsh|fish", helpKey: "help.completions", words: ["--completions", "--completions="],
               values: ["bash", "zsh", "fish"]),
         .init(usage: "--lang=en|ja", helpKey: "help.lang", words: ["--lang="], values: ["en", "ja"]),
         .init(usage: "--version", helpKey: "help.version", words: ["--version", "-V"], values: []),
         .init(usage: "--help", helpKey: "help.help", words: ["--help", "-h"], values: []),
     ]
+
+    /// 引数から位置引数（ファイル・URL・標準入力 `-`）を抜き出す。
+    /// `--` 以降はハイフンで始まる名前も含め、すべてファイルとして扱う。
+    public static func parseFiles(from args: [String]) -> [String] {
+        var out: [String] = []
+        var parsingOptions = true
+        for arg in args {
+            if parsingOptions {
+                if arg == "--" { parsingOptions = false; continue }
+                if arg == "-" { out.append(arg); continue }
+                if arg.hasPrefix("-") { continue }
+                out.append(arg)
+            } else {
+                out.append(arg)
+            }
+        }
+        return out
+    }
 }
 
 /// シェル補完のスクリプトを作る。`mrdiff --completions zsh` が標準出力へ出す。

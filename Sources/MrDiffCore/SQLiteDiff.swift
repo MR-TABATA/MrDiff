@@ -60,7 +60,7 @@ public func readSQLiteSchema(at url: URL) throws -> SQLiteSchema {
     // 基準の無い URI になって開けない。
     var comps = URLComponents(url: url.absoluteURL, resolvingAgainstBaseURL: false)
     comps?.query = "immutable=1&mode=ro"
-    guard let uri = comps?.string else { throw SQLiteError.cannotOpen(url.path) }
+    guard let uri = comps?.string else { throw SQLiteError.cannotOpen(PathDisplay.text(url)) }
     var db: OpaquePointer?
     let rc = sqlite3_open_v2(uri, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_URI, nil)
     defer { sqlite3_close(db) }
@@ -158,6 +158,63 @@ func describe(_ c: SQLiteColumn) -> String {
     return s
 }
 
+/// `CREATE TABLE` 文から、列名・型・NOT NULL・DEFAULT・PRIMARY KEY を超える
+/// 制約（外部キー、CHECK、テーブル制約、インライン制約、WITHOUT ROWID など）の差分があるかを判定する。
+func tableDefinitionDiffers(a: SQLiteTable, b: SQLiteTable) -> Bool {
+    if a.sql == b.sql { return false }
+    if a.columns == b.columns { return true }
+    // 列名の集合は同じだが並び順が違う場合（SELECT * や位置指定 INSERT に影響するテーブル定義差分）
+    let namesA = a.columns.map(\.name), namesB = b.columns.map(\.name)
+    if namesA != namesB && Set(namesA) == Set(namesB) { return true }
+
+    func extractConstraints(_ sql: String) -> [String] {
+        guard let openIdx = sql.firstIndex(of: "("),
+              let closeIdx = sql.lastIndex(of: ")"),
+              openIdx < closeIdx else { return [sql] }
+        let body = sql[sql.index(after: openIdx)..<closeIdx]
+        let suffix = String(sql[sql.index(after: closeIdx)...]).trimmingCharacters(in: .whitespaces)
+        var parts: [String] = []
+        var current = ""
+        var depth = 0
+        for ch in body {
+            if ch == "(" { depth += 1; current.append(ch) }
+            else if ch == ")" { depth -= 1; current.append(ch) }
+            else if ch == "," && depth == 0 {
+                let trimmed = current.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty { parts.append(trimmed) }
+                current = ""
+            } else {
+                current.append(ch)
+            }
+        }
+        let last = current.trimmingCharacters(in: .whitespaces)
+        if !last.isEmpty { parts.append(last) }
+
+        var constraints: [String] = []
+        if !suffix.isEmpty { constraints.append(suffix) }
+        for part in parts {
+            let upper = part.uppercased()
+            if upper.hasPrefix("CONSTRAINT ") || upper.hasPrefix("PRIMARY KEY") ||
+               upper.hasPrefix("FOREIGN KEY") || upper.hasPrefix("CHECK") || upper.hasPrefix("UNIQUE") {
+                constraints.append(part)
+            } else if upper.contains("REFERENCES ") || upper.contains("CHECK(") || upper.contains("CHECK (") ||
+                      upper.contains("COLLATE ") || upper.contains("UNIQUE") || upper.contains("GENERATED") {
+                let tokens = part.split(separator: " ").map(String.init)
+                for (i, tok) in tokens.enumerated() {
+                    let tUpper = tok.uppercased()
+                    if tUpper == "REFERENCES" || tUpper.hasPrefix("CHECK") || tUpper == "COLLATE" ||
+                       tUpper == "UNIQUE" || tUpper.hasPrefix("GENERATED") {
+                        constraints.append(tokens[i...].joined(separator: " "))
+                        break
+                    }
+                }
+            }
+        }
+        return constraints.sorted()
+    }
+    return extractConstraints(a.sql) != extractConstraints(b.sql)
+}
+
 public func compareSQLiteSchemas(_ a: SQLiteSchema, _ b: SQLiteSchema) -> SQLiteSchemaDiff {
     var d = SQLiteSchemaDiff()
     let ta = Set(a.tables.keys), tb = Set(b.tables.keys)
@@ -186,7 +243,7 @@ public func compareSQLiteSchemas(_ a: SQLiteSchema, _ b: SQLiteSchema) -> SQLite
         for col in x.columns where cb[col.name] == nil {
             changes.append(SQLiteColumnChange(column: col.name, kind: .removed, details: [], shape: describe(col)))
         }
-        let defChanged = x.sql != y.sql && changes.isEmpty
+        let defChanged = tableDefinitionDiffers(a: x, b: y)
         if !changes.isEmpty || defChanged {
             d.tablesChanged.append(SQLiteTableChange(table: name, columns: changes, definitionChanged: defChanged))
         }
@@ -208,7 +265,7 @@ public func compareSQLiteSchemas(_ a: SQLiteSchema, _ b: SQLiteSchema) -> SQLite
 
 extension JSONOutput {
     /// `bytesDiffer`: 2 つのファイルがバイトで違うか（スキーマが同じでも、行や並びが違えば true）。
-    public static func sqlite(_ d: SQLiteSchemaDiff, bytesDiffer: Bool) -> [String: Any] {
+    public static func sqlite(_ d: SQLiteSchemaDiff, bytesDiffer: Bool, redirects: [Redirect] = []) -> [String: Any] {
         var o: [String: Any] = ["kind": "sqlite-schema"]
         o["schema"] = d.isIdentical ? "identical" : "differ"
         o["result"] = (d.isIdentical && !bytesDiffer) ? "identical" : "differ"
@@ -231,6 +288,7 @@ extension JSONOutput {
             o["views"] = ["added": d.viewsAdded, "removed": d.viewsRemoved, "changed": d.viewsChanged]
             o["triggers"] = ["added": d.triggersAdded, "removed": d.triggersRemoved, "changed": d.triggersChanged]
         }
+        addRedirects(&o, redirects)
         return o
     }
 }
