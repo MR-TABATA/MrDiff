@@ -10,9 +10,9 @@
 class Mrdiff < Formula
   desc "Do they differ, and where — images, PDFs, Word, fonts, archives, folders, URLs, sites, SSH, and text"
   homepage "https://mrktools.app/en/diff/"
-  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.8.1/mrdiff-0.8.1-macos.zip"
-  sha256 "8f7f0c90c6128aed67e50320aab1830cf22e12255ad6333b28e22883635f6cbb"
-  version "0.8.1"
+  url "https://github.com/MR-TABATA/MrDiff/releases/download/v0.8.2/mrdiff-0.8.2-macos.zip"
+  sha256 "75f0d7b38911187a334788408c46e973c6ffc65693c9272c3d75ad642850734e"
+  version "0.8.2"
   license "MIT"
 
   depends_on :macos => :ventura # Package.swift の platforms（.v13）と同じ
@@ -34,7 +34,7 @@ class Mrdiff < Formula
     (testpath/"b.txt").write "two\n"
     assert_match "changed", shell_output("#{bin}/mrdiff --exit-code a.txt b.txt", 1)
     assert_match "No differences", shell_output("#{bin}/mrdiff a.txt a.txt")
-    assert_match "mrdiff 0.8.1", shell_output("#{bin}/mrdiff --version")
+    assert_match "mrdiff 0.8.2", shell_output("#{bin}/mrdiff --version")
     assert_match "compdef mrdiff", (zsh_completion/"_mrdiff").read
   end
 end
