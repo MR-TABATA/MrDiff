@@ -33,12 +33,18 @@ if [ "$DECLARED" != "$VERSION" ]; then
   exit 1
 fi
 
-swift build -c release --arch arm64 --arch x86_64 1>&2
-PRODUCTS=".build/apple/Products/Release"
+# universal は arch ごとに別々にビルドして lipo で束ねる。`--arch arm64 --arch x86_64` の同時指定は、
+# Xcode 16.4（Actions の macos-15）で依存の swift-service-lifecycle が
+# "duplicate output file" になって落ちる（0.9.0 で Postgres の依存が入ってから）。
+# scratch-path を分けないと、2 回目のビルドが 1 回目の出力を同じ場所に上書きする。
+swift build -c release --arch arm64 --scratch-path .build/rel-arm64 1>&2
+swift build -c release --arch x86_64 --scratch-path .build/rel-x86_64 1>&2
+ARM="$(swift build -c release --arch arm64 --scratch-path .build/rel-arm64 --show-bin-path)"
+X86="$(swift build -c release --arch x86_64 --scratch-path .build/rel-x86_64 --show-bin-path)"
 
 STAGE="$(mktemp -d)"
-cp "$PRODUCTS/mrdiff" "$STAGE/"
-cp -R "$PRODUCTS/MrDiff_MrDiffCore.bundle" "$STAGE/"
+lipo -create "$ARM/mrdiff" "$X86/mrdiff" -output "$STAGE/mrdiff"
+cp -R "$ARM/MrDiff_MrDiffCore.bundle" "$STAGE/"
 
 mkdir -p dist
 ZIP="dist/mrdiff-$VERSION-macos.zip"

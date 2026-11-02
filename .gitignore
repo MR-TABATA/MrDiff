@@ -17,3 +17,4 @@ DerivedData/
 
 # scripts/release.sh が作る配布物
 /dist/
+/dist/
