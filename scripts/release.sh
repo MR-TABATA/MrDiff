@@ -10,7 +10,8 @@
 # まとめ、実行時に `Bundle.module` が実行ファイルの隣を探す。無ければ即落ちる
 # （fatal error: unable to find bundle）。だから zip には必ず bundle を同梱し、
 # formula 側も両方を libexec に置いて bin へはシンボリックリンクを張る（homebrew/mrdiff.rb）。
-# シンボリックリンク経由でも bundle は見つかる（実行ファイルの実体の隣を見るため。確認済み）。
+# **リンク経由だと bundle は、リンクの隣しか探されない**（0.9.0 で確認: arch 別ビルドにしてから。
+# 0.8.3 までは実体の隣も見つかっていた）。だから formula は bin にも bundle のリンクを張る。
 #
 # zip なのは Homebrew が扱えるのと、MrShip がダウンロード数を数える拡張子に入っているため。
 set -eu

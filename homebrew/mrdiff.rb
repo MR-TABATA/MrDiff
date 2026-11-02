@@ -22,6 +22,9 @@ class Mrdiff < Formula
     # （scripts/release.sh の注記）。両方を libexec に置き、bin にはリンクだけ張る。
     libexec.install "mrdiff", "MrDiff_MrDiffCore.bundle"
     bin.install_symlink libexec/"mrdiff"
+    # リンク経由で起動すると bundle は「リンクの隣」しか探されない（0.9.0）。bin にもリンクを張る。
+    # 無いと `--completions zsh` が "could not load resource bundle" で落ち、brew install が失敗する。
+    bin.install_symlink libexec/"MrDiff_MrDiffCore.bundle"
 
     # `mrdiff --completions bash|zsh|fish` prints the script (0.8.0 and later).
     (bash_completion/"mrdiff").write Utils.safe_popen_read(bin/"mrdiff", "--completions", "bash")
