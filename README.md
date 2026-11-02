@@ -129,6 +129,44 @@ mrdiff --offset=0,-24 a.png b.png     # shift the right image up 24 px, compare 
 mrdiff --color=never a.log b.log      # no escape codes (auto-off when piped)
 ```
 
+### PostgreSQL
+
+Compare two PostgreSQL environments without writing to either database. Store each
+connection URL in an environment variable rather than passing credentials on the
+command line:
+
+```bash
+export LOCAL_DATABASE_URL='postgresql://mrdiff_reader:...@localhost/app'
+export PRODUCTION_DATABASE_URL='postgresql://mrdiff_reader:...@db.example.com/app'
+mrdiff db --from-env LOCAL_DATABASE_URL --to-env PRODUCTION_DATABASE_URL --mode schema
+mrdiff db --from-env LOCAL_DATABASE_URL --to-env PRODUCTION_DATABASE_URL --mode both --config master-tables.json
+```
+
+`--mode schema` compares user schemas, tables, columns, types, nullability,
+defaults, constraints, primary keys and indexes. `--mode data` compares rows in
+only the explicitly configured master tables; `--mode both` does both. Data
+comparisons require a JSON config that names each `schema.table`, its ordered
+primary key, and the columns to compare. Key columns are used to match rows, not
+compared as data:
+
+```json
+{
+  "tables": [
+    { "table": "public.countries", "key": ["id"], "columns": ["name", "code"] }
+  ]
+}
+```
+
+Use read-only database accounts. The command starts read-only transactions,
+does not print row values, and refuses tables whose configured key does not
+match the database primary key. Unsupported table configurations are reported
+as skipped; a skipped comparison is `incomplete` (exit 2), not a successful
+match. Tables over 10,000 rows stop with an error (exit 2). With `--exit-code`,
+differences exit 1. Schema and data reads use separate read-only transactions,
+so a live database change between them is not guaranteed to be in one snapshot.
+TLS certificate verification is enabled by default; `?sslmode=disable` is
+intended only for local testing.
+
 ### Text
 
 ```

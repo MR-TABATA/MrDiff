@@ -1,0 +1,9 @@
+{
+  "tables": [
+    {
+      "table": "public.not_present",
+      "key": ["id"],
+      "columns": ["name"]
+    }
+  ]
+}

@@ -30,6 +30,12 @@ public enum CLIOptions {
         .init(usage: "--clipboard", helpKey: "help.clipboard", words: ["--clipboard"], values: []),
         .init(usage: "--site <https://base> <dir>", helpKey: "help.site", words: ["--site"], values: []),
         .init(usage: "--ssh <dir> <host:path>", helpKey: "help.ssh", words: ["--ssh"], values: []),
+        .init(
+            usage: "db --from-env NAME --to-env NAME --mode=schema|data|both [--config FILE]",
+            helpKey: "help.postgres",
+            words: ["--from-env", "--to-env", "--mode=", "--config"],
+            values: ["schema", "data", "both"]
+        ),
         .init(usage: "--completions bash|zsh|fish", helpKey: "help.completions", words: ["--completions", "--completions="],
               values: ["bash", "zsh", "fish"]),
         .init(usage: "--lang=en|ja", helpKey: "help.lang", words: ["--lang="], values: ["en", "ja"]),

@@ -1,0 +1,9 @@
+{
+  "tables": [
+    {
+      "table": "public.row_limit",
+      "key": ["id"],
+      "columns": ["value"]
+    }
+  ]
+}

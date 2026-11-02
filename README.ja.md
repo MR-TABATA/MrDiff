@@ -127,6 +127,38 @@ mrdiff --offset=0,-24 a.png b.png     # 右を 24 px 上にずらして、重な
 mrdiff --color=never a.log b.log      # 制御文字を出さない（パイプなら自動で切れる）
 ```
 
+### PostgreSQL
+
+PostgreSQL の 2 環境を、どちらにも書き込まず比較する。接続 URL はコマンド引数に
+直接渡さず、環境変数に入れる。
+
+```bash
+export LOCAL_DATABASE_URL='postgresql://mrdiff_reader:...@localhost/app'
+export PRODUCTION_DATABASE_URL='postgresql://mrdiff_reader:...@db.example.com/app'
+mrdiff db --from-env LOCAL_DATABASE_URL --to-env PRODUCTION_DATABASE_URL --mode schema
+mrdiff db --from-env LOCAL_DATABASE_URL --to-env PRODUCTION_DATABASE_URL --mode both --config master-tables.json
+```
+
+`--mode schema` はユーザーのスキーマ、テーブル、列、型、NULL 可否、default、
+制約、主キー、索引を比較する。`--mode data` は設定に明記したマスター系テーブルだけを行比較し、
+`--mode both` は両方を行う。データ比較には、`schema.table`、順序付き主キー、
+比較する列を指定する JSON が必要。主キー列は行の照合に使い、データとしては比較しない。
+
+```json
+{
+  "tables": [
+    { "table": "public.countries", "key": ["id"], "columns": ["name", "code"] }
+  ]
+}
+```
+
+読み取り専用アカウントを使う。読み取りは読み取り専用トランザクションで行い、行の値は出力しない。
+設定したキーが DB の主キーと一致しないテーブルは比較しない。不適合な設定はスキップとして報告する。
+スキップがあれば結果は成功扱いにせず、`incomplete`（終了コード 2）になる。1 万行を超えるテーブルは
+エラーで終了する（終了コード 2）。`--exit-code` を指定した場合、差分ありは終了コード 1。
+スキーマとデータの読み取りは別々の読み取り専用トランザクションなので、稼働中 DB の変更をまたいで
+同一スナップショットになる保証はない。TLS 証明書の検証は既定で有効。`?sslmode=disable` はローカル検証専用。
+
 ### テキスト
 
 ```

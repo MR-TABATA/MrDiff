@@ -4,6 +4,23 @@
 "text.summary"         = "%d changed, %d added, %d removed";
 "text.move.to"         = "moved to line %d";
 "text.move.from"       = "moved from line %d";
+"postgres.title"       = "PostgreSQL (%@)";
+"postgres.schema"      = "Schema: %@";
+"postgres.schema.identical" = "identical";
+"postgres.schema.differ" = "differ";
+"postgres.kind.added"    = "added";
+"postgres.kind.removed"  = "removed";
+"postgres.kind.changed"  = "changed";
+"postgres.data"        = "Data:";
+"postgres.no_differences" = "No differences";
+"postgres.row_counts"  = "%@: %d added, %d removed, %d changed";
+"postgres.changed_columns" = "changed columns: %@";
+"postgres.skipped"     = "%@: skipped (%@)";
+"postgres.incomplete"  = "Comparison incomplete";
+"error.postgres.invalid_connection" = "invalid PostgreSQL connection URL: %@";
+"error.postgres.invalid_configuration" = "invalid table configuration: %@";
+"error.postgres.query_failed" = "PostgreSQL comparison failed: %@";
+"error.postgres.row_limit_exceeded" = "table %@ exceeds the 10,000-row comparison limit";
 "sqlite.identical"     = "No differences (SQLite)";
 "sqlite.schema_same_bytes_differ" = "SQLite: the schemas are identical, but the files differ (row data is not compared)";
 "sqlite.summary"       = "SQLite schema: %d changed, %d added, %d removed";
@@ -49,6 +66,8 @@
 "error.usage"          = "usage: mrdiff [--version] [--exit-code] [-q|--quiet] [--oneline] [--relative] [--show-secrets] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a and b may be files, http(s) URLs, or - for standard input; with --clipboard, give one\n       mrdiff --help lists every option";
 "error.bad_tolerance"  = "--tolerance needs a number 0 or greater";
 "error.bad_color"      = "--color takes always, never or auto";
+"error.postgres_oneline" = "--oneline is not supported with PostgreSQL comparisons";
+"help.postgres"        = "Compare PostgreSQL schemas and configured master data (read-only)";
 "error.mixed_kinds"    = "cannot compare text with a non-text file";
 "error.image_only_flag" = "--tolerance and --ignore-alpha apply to images, not text";
 

@@ -137,6 +137,29 @@ if oneline {
     }
 }
 
+let dbCommandIndex = args.firstIndex(of: "db")
+let globalOptionsBeforeDB = dbCommandIndex.map { index in
+    args[..<index].allSatisfy {
+        ["--oneline", "--json", "--format=json", "--exit-code", "--quiet", "-q"].contains($0)
+            || $0.hasPrefix("--lang=")
+    }
+} ?? false
+if dbCommandIndex == 0 || globalOptionsBeforeDB {
+    if oneline { die(t("error.postgres_oneline")) }
+    do {
+        let result = try PostgresDiffCommand.run(
+            arguments: Array(args.dropFirst((dbCommandIndex ?? 0) + 1)),
+            environment: ProcessInfo.processInfo.environment,
+            json: wantsJSON
+        )
+        print(result.output)
+        if result.exitCode == 2 { exit(2) }
+        exit(result.exitCode == 0 || !wantsExitCode ? 0 : 1)
+    } catch {
+        die("\(error)")
+    }
+}
+
 // **`--tolerance=N` の形だけ受ける。**空白区切り（`--tolerance 2`）を許すと、
 // 2 がファイル名の側に落ちて「使い方」が出る ―― 黙って 0 で走るよりはよい。
 var tolerance = 0

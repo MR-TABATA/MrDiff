@@ -1,0 +1,14 @@
+{
+  "tables": [
+    {
+      "table": "public.countries",
+      "key": ["id"],
+      "columns": ["name", "code", "amount", "observed_at"]
+    },
+    {
+      "table": "public.we\"ird",
+      "key": ["id"],
+      "columns": ["it's"]
+    }
+  ]
+}

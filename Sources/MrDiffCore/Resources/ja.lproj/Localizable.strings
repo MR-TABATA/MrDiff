@@ -4,6 +4,23 @@
 "text.summary"         = "変更 %d 行・追加 %d 行・削除 %d 行";
 "text.move.to"         = "%d行目に移動";
 "text.move.from"       = "%d 行目から移動";
+"postgres.title"       = "PostgreSQL（%@）";
+"postgres.schema"      = "スキーマ: %@";
+"postgres.schema.identical" = "同じ";
+"postgres.schema.differ" = "違いあり";
+"postgres.kind.added"    = "追加";
+"postgres.kind.removed"  = "削除";
+"postgres.kind.changed"  = "変更";
+"postgres.data"        = "データ:";
+"postgres.no_differences" = "違いはありません";
+"postgres.row_counts"  = "%@: 追加 %d・削除 %d・変更 %d";
+"postgres.changed_columns" = "変更列: %@";
+"postgres.skipped"     = "%@: 比較をスキップ（%@）";
+"postgres.incomplete"  = "比較未完了";
+"error.postgres.invalid_connection" = "PostgreSQL の接続 URL が正しくありません: %@";
+"error.postgres.invalid_configuration" = "テーブル設定が正しくありません: %@";
+"error.postgres.query_failed" = "PostgreSQL の比較に失敗しました: %@";
+"error.postgres.row_limit_exceeded" = "テーブル %@ は比較上限の10,000行を超えています";
 "sqlite.identical"     = "違いなし（SQLite）";
 "sqlite.schema_same_bytes_differ" = "SQLite: スキーマは同じですが、ファイルは違います（行のデータは比べていません）";
 "sqlite.summary"       = "SQLite のスキーマ: 変更 %d・追加 %d・削除 %d";
@@ -49,6 +66,8 @@
 "error.usage"          = "使い方: mrdiff [--version] [--exit-code] [-q|--quiet] [--oneline] [--relative] [--show-secrets] [--json] [--tolerance=N] [--ignore-alpha] [--color=auto|always|never] [--no-pager] [--clipboard] [--lang=en|ja] <a> <b>\n       a と b はファイル・http(s) の URL・標準入力（-）。--clipboard のときは 1 つだけ渡す\n       mrdiff --help でオプションの一覧が出ます";
 "error.bad_tolerance"  = "--tolerance には 0 以上の数を指定してください";
 "error.bad_color"      = "--color には always / never / auto を指定してください";
+"error.postgres_oneline" = "PostgreSQL比較では --oneline は使えません";
+"help.postgres"        = "PostgreSQLのスキーマと指定したマスターデータを読み取り専用で比較";
 "error.mixed_kinds"    = "テキストとテキストでないものは比べられません";
 "error.image_only_flag" = "--tolerance と --ignore-alpha は画像用です。テキストには使えません";
 
