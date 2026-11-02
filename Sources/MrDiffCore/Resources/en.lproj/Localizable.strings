@@ -2,6 +2,8 @@
 
 "text.identical"       = "No differences";
 "text.summary"         = "%d changed, %d added, %d removed";
+"text.move.to"         = "moved to line %d";
+"text.move.from"       = "moved from line %d";
 "sqlite.identical"     = "No differences (SQLite)";
 "sqlite.schema_same_bytes_differ" = "SQLite: the schemas are identical, but the files differ (row data is not compared)";
 "sqlite.summary"       = "SQLite schema: %d changed, %d added, %d removed";

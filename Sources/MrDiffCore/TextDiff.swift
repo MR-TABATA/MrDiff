@@ -206,11 +206,14 @@ public struct TextDiff {
     public let left: TextSource
     public let right: TextSource
     public let ops: [DiffOp]
+    /// 完全一致する削除・追加ブロックの移動対応。行番号は 0 始まり。
+    public let moves: [TextMove]
 
     public init(left: TextSource, right: TextSource, ops: [DiffOp]) {
         self.left = left
         self.right = right
         self.ops = ops
+        self.moves = TextMoveDetector.detect(left: left, right: right, ops: ops)
     }
 
     /// 1 行も違わない
@@ -240,6 +243,175 @@ public struct TextDiff {
             if case let .delete(_, c) = op { return n + c }
             return n
         }
+    }
+}
+
+private enum TextMoveDetector {
+    private static let minimumMoveLines = 3
+    private static let maximumMoveSearchLines = 250_000
+    private static let maximumMoveCandidates = 32
+
+    private struct BlockSignature: Hashable {
+        let count: Int
+        let first: UInt64
+        let second: UInt64
+    }
+
+    private struct BlockOccurrences {
+        var removed: [Range<Int>] = []
+        var added: [Range<Int>] = []
+    }
+
+    static func detect(left: TextSource, right: TextSource, ops: [DiffOp]) -> [TextMove] {
+        guard withinSearchBudget(left: left, right: right, ops: ops) else { return [] }
+        let blocks = changedBlocks(left: left, right: right, ops: ops)
+        let moves = pairedMoves(blocks, left: left, right: right)
+            .filter { $0.from.count >= minimumMoveLines }
+        guard moves.count <= maximumMoveCandidates else { return [] }
+        return moves.filter {
+            occursExactlyOnce($0.from, in: left, matching: left)
+                && occursExactlyOnce($0.from, in: right, matching: left)
+        }.sorted { $0.from.lowerBound < $1.from.lowerBound }
+    }
+
+    private static func withinSearchBudget(left: TextSource, right: TextSource, ops: [DiffOp]) -> Bool {
+        var changedBlocks = 0
+        var changedLines = 0
+        var hasDeletion = false
+        var hasAddition = false
+        for operation in ops {
+            switch operation {
+            case let .delete(_, count):
+                hasDeletion = true
+                changedBlocks += 1
+                changedLines += count
+            case let .insert(_, count):
+                hasAddition = true
+                changedBlocks += 1
+                changedLines += count
+            default:
+                continue
+            }
+            if changedBlocks > 2_000 || changedLines > 100_000 { return false }
+        }
+        return hasDeletion && hasAddition
+            && max(left.count, right.count) <= maximumMoveSearchLines
+    }
+
+    private static func changedBlocks(left: TextSource, right: TextSource,
+                                      ops: [DiffOp]) -> [BlockSignature: BlockOccurrences] {
+        var blocks: [BlockSignature: BlockOccurrences] = [:]
+        for operation in ops {
+            switch operation {
+            case let .delete(start, count):
+                let range = start..<(start + count)
+                blocks[signature(left, range), default: BlockOccurrences()].removed.append(range)
+            case let .insert(start, count):
+                let range = start..<(start + count)
+                blocks[signature(right, range), default: BlockOccurrences()].added.append(range)
+            default:
+                continue
+            }
+        }
+        return blocks
+    }
+
+    private static func signature(_ source: TextSource, _ range: Range<Int>) -> BlockSignature {
+        var first: UInt64 = 0x243f_6a88_85a3_08d3
+        var second: UInt64 = 0x1319_8a2e_0370_7344
+        for index in range {
+            let hash = source.hashes[index]
+            first = (first ^ hash.a) &* 0x9e37_79b9_7f4a_7c15
+            first ^= first >> 29
+            second = (second &+ hash.b) &* 0xbf58_476d_1ce4_e5b9
+            second ^= second >> 31
+        }
+        return BlockSignature(count: range.count, first: first, second: second)
+    }
+
+    private static func pairedMoves(_ blocks: [BlockSignature: BlockOccurrences],
+                                    left: TextSource, right: TextSource) -> [TextMove] {
+        blocks.compactMap { _, occurrences -> TextMove? in
+            guard occurrences.removed.count == 1, occurrences.added.count == 1,
+                  let from = occurrences.removed.first, let destination = occurrences.added.first,
+                  hasSameLines(from, destination, left: left, right: right) else { return nil }
+            return TextMove(from: from, to: destination)
+        }
+    }
+
+    private static func hasSameLines(_ leftRange: Range<Int>, _ rightRange: Range<Int>,
+                                    left: TextSource, right: TextSource) -> Bool {
+        guard leftRange.count == rightRange.count else { return false }
+        for offset in 0..<leftRange.count
+        where left.line(leftRange.lowerBound + offset) != right.line(rightRange.lowerBound + offset) {
+            return false
+        }
+        return true
+    }
+
+    private static func occursExactlyOnce(_ range: Range<Int>, in source: TextSource,
+                                          matching reference: TextSource) -> Bool {
+        let pattern = Array(reference.hashes[range])
+        guard !pattern.isEmpty, pattern.count <= source.count else { return false }
+        let prefix = patternPrefix(pattern)
+        return countExactOccurrences(pattern, prefix: prefix, in: source, reference: reference,
+                                     referenceRange: range) == 1
+    }
+
+    private static func patternPrefix(_ pattern: [LineHash]) -> [Int] {
+        var prefix = [Int](repeating: 0, count: pattern.count)
+        var prefixLength = 0
+        for index in 1..<pattern.count {
+            while prefixLength > 0 && pattern[index] != pattern[prefixLength] {
+                prefixLength = prefix[prefixLength - 1]
+            }
+            if pattern[index] == pattern[prefixLength] { prefixLength += 1 }
+            prefix[index] = prefixLength
+        }
+        return prefix
+    }
+
+    private static func countExactOccurrences(_ pattern: [LineHash], prefix: [Int],
+                                              in source: TextSource, reference: TextSource,
+                                              referenceRange: Range<Int>) -> Int {
+        var matchLength = 0
+        var occurrences = 0
+        for index in source.hashes.indices {
+            while matchLength > 0 && source.hashes[index] != pattern[matchLength] {
+                matchLength = prefix[matchLength - 1]
+            }
+            if source.hashes[index] == pattern[matchLength] { matchLength += 1 }
+            guard matchLength == pattern.count else { continue }
+
+            let start = index - pattern.count + 1
+            if matchesExactly(start: start, referenceRange: referenceRange,
+                              in: source, reference: reference) {
+                occurrences += 1
+                if occurrences > 1 { return occurrences }
+            }
+            matchLength = prefix[matchLength - 1]
+        }
+        return occurrences
+    }
+
+    private static func matchesExactly(start: Int, referenceRange: Range<Int>,
+                                       in source: TextSource, reference: TextSource) -> Bool {
+        for offset in 0..<referenceRange.count
+        where source.line(start + offset) != reference.line(referenceRange.lowerBound + offset) {
+            return false
+        }
+        return true
+    }
+}
+
+/// そのまま移動した連続行ブロック。範囲は左右それぞれの 0 始まり行番号。
+public struct TextMove: Equatable, Hashable, Sendable {
+    public let from: Range<Int>
+    public let destination: Range<Int>
+
+    public init(from: Range<Int>, to destination: Range<Int>) {
+        self.from = from
+        self.destination = destination
     }
 }
 

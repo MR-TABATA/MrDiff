@@ -213,6 +213,12 @@ func renderText(_ d: TextDiff, style s: Style, into out: inout Out) {
         out.line("\(s.dim)\(String(repeating: " ", count: 11))   … \(n) unchanged\(s.reset)")
     }
 
+    let movesFrom = Dictionary(uniqueKeysWithValues: d.moves.map { ($0.from.lowerBound, $0) })
+    let movesTo = Dictionary(uniqueKeysWithValues: d.moves.map { ($0.destination.lowerBound, $0) })
+    func moveNote(_ key: String, _ line: Int) {
+        out.line("\(s.dim)    ### \(t(key, line + 1)) ###\(s.reset)")
+    }
+
     for (i, op) in d.ops.enumerated() {
         let isFirst = (i == 0), isLast = (i == d.ops.count - 1)
         switch op {
@@ -229,11 +235,17 @@ func renderText(_ d: TextDiff, style s: Style, into out: inout Out) {
             }
 
         case let .delete(l, count):
+            if let move = movesFrom[l], move.from.count == count {
+                moveNote("text.move.to", move.destination.lowerBound)
+            }
             for k in 0..<count {
                 out.line("\(s.red)\(num(l + k, nil)) - \(d.left.line(l + k))\(s.reset)")
             }
 
         case let .insert(r, count):
+            if let move = movesTo[r], move.destination.count == count {
+                moveNote("text.move.from", move.from.lowerBound)
+            }
             for k in 0..<count {
                 out.line("\(s.green)\(num(nil, r + k)) + \(d.right.line(r + k))\(s.reset)")
             }

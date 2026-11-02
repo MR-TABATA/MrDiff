@@ -44,6 +44,16 @@ final class JSONOutputTests: XCTestCase {
         XCTAssertEqual(s, #"{"added":0,"changed":2,"kind":"text","removed":0,"result":"differ"}"#)
     }
 
+    func testTextMovesAppearInJSONWithOneBasedLineNumbers() {
+        let moved = ["func moved() {", "    save()", "}"]
+        let stationary = ["one", "two", "three", "four", "five"]
+        let left = (["start"] + moved + stationary + ["end"]).joined(separator: "\n")
+        let right = (["start"] + stationary + moved + ["end"]).joined(separator: "\n")
+        let encodedJSON = JSONOutput.encode(JSONOutput.text(compareText(left, right)))
+
+        XCTAssertTrue(encodedJSON.contains(#""moves":[{"from_line":2,"lines":3,"to_line":7}]"#), encodedJSON)
+    }
+
     // MARK: - JSON / YAML の構造比較
 
     func testStructuredDiffer() {

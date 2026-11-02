@@ -109,6 +109,36 @@ final class TextDiffTests: XCTestCase {
         XCTAssertEqual([d.changed, d.added, d.removed], [0, 0, 1])
     }
 
+    func test_削除追加として現れる一意なブロックを移動として結びつける() {
+        let moved = ["func moved() {", "    save()", "}"]
+        let stationary = ["one", "two", "three", "four", "five"]
+        let left = (["start"] + moved + stationary + ["end"]).joined(separator: "\n")
+        let right = (["start"] + stationary + moved + ["end"]).joined(separator: "\n")
+
+        XCTAssertEqual(compareText(left, right).moves, [TextMove(from: 1..<4, to: 6..<9)])
+    }
+
+    func test_関数を挿入して後続行がずれただけなら移動にしない() {
+        let block = ["func existing() {", "    prepare()", "    save()", "}"]
+        let left = (["start"] + block + ["end"]).joined(separator: "\n")
+        let right = (["start", "func added() {}"] + block + ["end"]).joined(separator: "\n")
+
+        XCTAssertTrue(compareText(left, right).moves.isEmpty)
+    }
+
+    func test_重複する同一ブロックは移動と断定しない() {
+        let block = ["func repeated() {", "    work()", "}"]
+        let left = (["start"] + block + ["middle"] + block + ["end"]).joined(separator: "\n")
+        let right = (["start", "middle"] + block + block + ["end"]).joined(separator: "\n")
+
+        XCTAssertTrue(compareText(left, right).moves.isEmpty)
+    }
+
+    func test_短い削除追加は移動と断定しない() {
+        let diff = compareText("start\nreturn value\nend", "start\nend\nreturn value")
+        XCTAssertTrue(diff.moves.isEmpty)
+    }
+
     /// 消して足したものは **replace に畳まれる**（`LineDiff.coalesce`）。
     /// 「消して足した」より「書き換わった」のほうが読めるうえ、行内差分が効く。
     func test_書き換えはreplaceになる() {

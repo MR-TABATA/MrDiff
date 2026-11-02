@@ -28,7 +28,7 @@ let package = Package(
         .executableTarget(name: "mrdiff", dependencies: ["MrDiffCore"]),
         .testTarget(
             name: "MrDiffTests",
-            dependencies: ["MrDiffCore"],
+            dependencies: ["MrDiffCore", "mrdiff"],
             resources: [.copy("Fixtures")]
         ),
     ]

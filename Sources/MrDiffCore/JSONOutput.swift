@@ -42,6 +42,12 @@ public enum JSONOutput {
             o["changed"] = d.changed   // replace ハンクの max(左, 右)。README に定義を書いてある
             o["added"] = d.added
             o["removed"] = d.removed
+            if !d.moves.isEmpty {
+                o["moves"] = d.moves.map { move in
+                    ["from_line": move.from.lowerBound + 1, "to_line": move.destination.lowerBound + 1,
+                     "lines": move.from.count]
+                }
+            }
         }
         addRedirects(&o, redirects)
         return o

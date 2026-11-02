@@ -2,6 +2,8 @@
 
 "text.identical"       = "違いはありません";
 "text.summary"         = "変更 %d 行・追加 %d 行・削除 %d 行";
+"text.move.to"         = "%d行目に移動";
+"text.move.from"       = "%d 行目から移動";
 "sqlite.identical"     = "違いなし（SQLite）";
 "sqlite.schema_same_bytes_differ" = "SQLite: スキーマは同じですが、ファイルは違います（行のデータは比べていません）";
 "sqlite.summary"       = "SQLite のスキーマ: 変更 %d・追加 %d・削除 %d";
