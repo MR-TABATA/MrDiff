@@ -53,5 +53,38 @@ rm -f "$ZIP"
 (cd "$STAGE" && zip -qr "$ROOT/$ZIP" mrdiff MrDiff_MrDiffCore.bundle)
 rm -rf "$STAGE"
 
+# 配った zip を Homebrew と同じ配置（libexec に実体、bin にリンク）で動かして確かめる。
+# 0.9.0 は、リンク経由だと bundle が見つからず `--completions zsh` が落ちたのに、直接実行では気づけなかった。
+# 落ちるなら、配布物として出さない。出力は stderr へ（stdout は下の 2 行だけ）。
+# ビルド先の絶対パスにも bundle のフォールバックがあり、ビルドした同じ機械では、リンクが足りなくても
+# そこで見つかってしまう（検査をすり抜ける）。検査の間だけビルド先の bundle を退避させる。
+CHECK="$(mktemp -d)"
+for B in "$ARM" "$X86"; do mv "$B/MrDiff_MrDiffCore.bundle" "$B/MrDiff_MrDiffCore.bundle.hold"; done
+restore_bundles() {
+  for B in "$ARM" "$X86"; do
+    [ -d "$B/MrDiff_MrDiffCore.bundle.hold" ] && mv "$B/MrDiff_MrDiffCore.bundle.hold" "$B/MrDiff_MrDiffCore.bundle"
+  done
+  rm -rf "$CHECK"
+}
+trap restore_bundles EXIT
+mkdir -p "$CHECK/libexec" "$CHECK/bin"
+unzip -q "$ZIP" -d "$CHECK/libexec"
+ln -s ../libexec/mrdiff "$CHECK/bin/mrdiff"
+ln -s ../libexec/MrDiff_MrDiffCore.bundle "$CHECK/bin/MrDiff_MrDiffCore.bundle"
+for SHELL_NAME in bash zsh fish; do
+  if ! "$CHECK/bin/mrdiff" --completions "$SHELL_NAME" >/dev/null 2>"$CHECK/err"; then
+    echo "配布物の検査に失敗: リンク経由の mrdiff --completions $SHELL_NAME" >&2
+    cat "$CHECK/err" >&2
+    rm -f "$ZIP"
+    exit 1
+  fi
+done
+GOT="$("$CHECK/bin/mrdiff" --version)"
+if [ "$GOT" != "mrdiff $VERSION" ]; then
+  echo "配布物の検査に失敗: --version が「$GOT」（期待は「mrdiff $VERSION」）" >&2
+  rm -f "$ZIP"
+  exit 1
+fi
+
 echo "$ZIP"
 shasum -a 256 "$ZIP" | cut -d' ' -f1
