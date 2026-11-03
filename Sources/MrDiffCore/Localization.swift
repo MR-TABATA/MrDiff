@@ -37,12 +37,33 @@ public enum Lang {
     static var bundle: Bundle = load(current)
 
     private static func load(_ lang: String) -> Bundle {
-        if let path = Bundle.module.path(forResource: lang, ofType: "lproj"),
+        let root = resourceBundle
+        if let path = root.path(forResource: lang, ofType: "lproj"),
            let b = Bundle(path: path) {
             return b
         }
-        return Bundle.module
+        return root
     }
+
+    /// SPM のリソースバンドルの名前（Package.swift の package 名 + target 名）。
+    static let resourceBundleName = "MrDiff_MrDiffCore.bundle"
+
+    /// 配ったバイナリの隣のバンドルを、**シンボリックリンクを解決した実体の隣**で探す。
+    ///
+    /// `Bundle.module`（SPM が生成するアクセサ）は、`Bundle.main.bundleURL`（リンクの置かれた場所）の隣と、
+    /// ビルドした機械の絶対パスしか見ない。Homebrew は `bin/mrdiff` を `libexec/mrdiff` へのリンクにするので、
+    /// ツールチェーンによっては（0.9.0 を作った Xcode 16.4）、実体の隣にあるバンドルを見つけられず、
+    /// `--completions zsh` のような訳を引く操作で fatalError になった。
+    /// 見つからなければ nil を返し、呼び出し側が従来どおり `Bundle.module` に任せる。
+    static func locateResourceBundle(executable: URL?) -> Bundle? {
+        guard let executable else { return nil }
+        let dir = executable.resolvingSymlinksInPath().deletingLastPathComponent()
+        return Bundle(url: dir.appendingPathComponent(resourceBundleName))
+    }
+
+    /// 訳を引くバンドル。実体の隣を先に、無ければ `Bundle.module`（開発・テストのビルド先）。
+    private static let resourceBundle: Bundle =
+        locateResourceBundle(executable: Bundle.main.executableURL) ?? Bundle.module
 }
 
 /// 訳を引く。**鍵が無ければ鍵そのものを返す**（黙って空文字にしない）。
