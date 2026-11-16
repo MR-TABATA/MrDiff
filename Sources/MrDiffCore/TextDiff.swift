@@ -28,10 +28,28 @@ public enum FileKind: Equatable, Sendable {
 public func detectKind(_ data: Data, probe: Int = 8192) -> FileKind {
     let head = data.prefix(probe)
     if head.contains(0) { return .other }
-    // 途中で切れた UTF-8 の多バイト文字を「壊れている」と誤判定しないよう、
-    // 末尾の数バイトは落として判定する。
-    let trimmed = head.count < data.count ? head.dropLast(4) : head
-    return String(data: Data(trimmed), encoding: .utf8) != nil ? .text : .other
+    // 切れ目が、UTF-8 の多バイト文字の途中だったときだけ、その中途半端な尾を落として判定する。
+    // （一律に数バイト落とすと、3 バイトの日本語の途中で切れたとき、その前の完全な文字まで欠いて、
+    // 新しい「途中の文字」を作ってしまい、テキストをバイナリと誤判定する。）
+    let trimmed = head.count < data.count ? droppingIncompleteUTF8Tail(Data(head)) : Data(head)
+    return String(data: trimmed, encoding: .utf8) != nil ? .text : .other
+}
+
+/// 末尾が、途中で切れた UTF-8 の文字なら、その文字だけを落とす。完全な文字や ASCII は、そのまま。
+/// 末尾から数えて、最初に出会う「先頭バイト」（`10xxxxxx` でないもの）が、必要な長さに足りているかを見る。
+/// 先頭バイトが見つからない（連続バイトばかり）ときは、壊れた並びなので、触らない（あとの判定で落ちる）。
+func droppingIncompleteUTF8Tail(_ data: Data) -> Data {
+    let n = data.count
+    var back = 1
+    while back <= min(4, n) {
+        let b = data[data.startIndex + n - back]
+        if b & 0xC0 != 0x80 {                       // 先頭バイト（または ASCII）
+            let need = b < 0x80 ? 1 : (b >= 0xF0 ? 4 : (b >= 0xE0 ? 3 : (b >= 0xC0 ? 2 : 1)))
+            return back >= need ? data : data.prefix(n - back)
+        }
+        back += 1
+    }
+    return data
 }
 
 // MARK: - 行の並び

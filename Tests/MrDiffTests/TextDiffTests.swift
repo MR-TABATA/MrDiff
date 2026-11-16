@@ -90,6 +90,29 @@ final class TextDiffTests: XCTestCase {
         XCTAssertEqual(detectKind(Data([0xff, 0xfe, 0x41])), .other)
     }
 
+    /// **先頭 8192 バイトで切れた位置が、多バイト文字の途中でも、テキストと判定する。**
+    /// 以前は、末尾を 4 バイト一律に落としていたので、3 バイトの日本語の途中で切れると、その前の
+    /// 完全な文字を 1 バイト欠いて「壊れた UTF-8」になり、8KB を超える日本語のファイルが
+    /// 偶然の切れ目しだいでバイナリ扱いになった。
+    func test_8192バイトの切れ目が文字の途中でもテキストと判定する() {
+        // 1・2・3・4 バイトの文字を、先頭の ASCII の数を変えながら並べて、あらゆる切れ目を作る。
+        for unit in ["あ", "é", "😀", "a"] {
+            for lead in 0..<8 {
+                let text = String(repeating: "x", count: lead) + String(repeating: unit, count: 9000) + "\n"
+                let data = Data(text.utf8)
+                XCTAssertGreaterThan(data.count, 8192)
+                XCTAssertEqual(detectKind(data), .text, "unit=\(unit) lead=\(lead)")
+            }
+        }
+    }
+
+    func test_途中で切れていなくても壊れた並びはテキストにしない() {
+        // 8192 バイト目より前に、本当に壊れた並びがあれば、テキストにしない。
+        var bytes = Array("x".utf8) + [0xE3, 0x81]            // 途中で終わる文字（直後が ASCII）
+        bytes += Array(String(repeating: "y", count: 9000).utf8)
+        XCTAssertEqual(detectKind(Data(bytes)), .other)
+    }
+
     // MARK: - 数え上げ
 
     func test_同じなら差分なし() {
